@@ -25,6 +25,8 @@ pub struct CABlockCache (HashMap<u64, UnsafeBlock>);
 struct UnsafeBlock(HeapBlock<'static>);
 
 impl CABlockCache {
+    pub fn new() -> Self {CABlockCache (HashMap::new())}
+
     pub fn get_block<'a>(&'a mut self, desc: BlockDesc<'a>) -> Block<'a> {
         let hash = hash(&desc);
         let unsafe_block = self.0.entry(hash).or_insert_with(||
