@@ -4,57 +4,72 @@ use std::mem;
 
 mod cache;
 
-pub struct CacheData (HashMap<u64, UnsafeBlock>);
+// NOTE ON OWNERSHIP AND SAFETY:
+//
+// The data in a Hashlife computation consists of a collection of blocks which
+// are all listed in a hash table. In this implementation, the hash table,
+// CABlockCache, owns all the blocks that it references. However, these blocks
+// also reference one another. Ideally, these references would be immutable
+// references with the same lifetime as the CABlockCache that owns those blocks.
+// However, Rust has no way of specifying such a lifetime, so we need to use
+// unsafe Rust to simulate such a feature, and I'm not convinced my
+// implementation is safe.
+//
+// The type HeapBlock<'a> corresponds to a block with all references having
+// lifetime 'a (including all references in blocks that it references,
+// recursively). Since HeapBlock<'a> includes cache data with references to
+// other blocks and interior mutability, it is invariant in 'a [currently this
+// is not implemented so it is covariant in 'a].
 
-type UnsafeBlock = HeapBlock<'static>;
+// A hashtable with all the blocks used for a Hashlife computation.
+pub struct CABlockCache (HashMap<u64, UnsafeBlock>);
 
-struct HeapBlock<'a> {
+struct UnsafeBlock(HeapBlock<'static>);
+
+pub struct HeapBlock<'a> {
     content: BlockDesc<'a>,
     hash: u64,
 }
 
 #[derive(Hash)]
-enum BlockDesc<'a> {
+pub enum BlockDesc<'a> {
     Node([[Block<'a>; 2]; 2]),
     Leaf(Leaf),
 }
 
 pub type Block<'a> = &'a HeapBlock<'a>;
-type Leaf = u8;
+pub type Leaf = u8;
 
-impl CacheData {
-    pub fn lookup<'a>(&'a self, hash: u64) -> Option<Block<'a>> {
-        //unsafe {mem::transmute(self.0.get(&hash))}
-        self.0.get(&hash)
-    }
-
-    unsafe fn add_block<'a>(&'a mut self, hash: u64, block: HeapBlock<'a>) {
-        let unsafe_block = mem::transmute(block);
-        self.0.insert(hash, unsafe_block);
-    }
-
-    unsafe fn add_block_from_desc<'a>(&'a mut self, desc: BlockDesc<'a>) {
-        let block = HeapBlock::from_desc(desc);
-        self.add_block(block.hash, block);
-    }
-
-    unsafe fn get_block<'a>(&'a mut self, desc: BlockDesc<'a>) -> Block<'a> {
+impl CABlockCache {
+    pub fn get_block<'a>(&'a mut self, desc: BlockDesc<'a>) -> Block<'a> {
         let hash = hash(&desc);
-        self.lookup(hash).map(|block| {return block;});
-        // Note: Code branch calculates hash twice.
-        self.add_block_from_desc(desc);
-        self.lookup(hash).unwrap()
+        let unsafe_block = self.0.entry(hash).or_insert_with(||
+            UnsafeBlock::from_heap_block(
+                HeapBlock::from_desc_and_hash(desc, hash)
+            )
+        );
+        unsafe {&unsafe_block.to_heap_block()}
+    }
+}
+
+impl UnsafeBlock {
+    fn from_heap_block(heap_block: HeapBlock) -> UnsafeBlock {
+        unsafe {UnsafeBlock(mem::transmute(heap_block))}
+    }
+
+    unsafe fn to_heap_block<'a>(&self) -> &HeapBlock<'a> {
+        // This will fail when HeapBlock<'a> becomes invariant
+        &self.0
     }
 }
 
 impl<'a> HeapBlock<'a> {
-    fn from_desc(desc: BlockDesc) -> HeapBlock {
-        let hash = hash(&desc);
+    fn from_desc_and_hash(desc: BlockDesc, hash: u64) -> HeapBlock {
         HeapBlock {
             content: desc,
             hash: hash,
         }
-    }
+    }    
 }
 
 impl<'a> Hash for HeapBlock<'a> {
