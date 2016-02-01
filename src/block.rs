@@ -52,7 +52,7 @@ impl UnsafeBlock {
 pub struct Block<'a> {
     content: BlockDesc<'a>,
     hash: u64,
-    evolve: Cache<BlockLink<'a>>,
+    evolve: Cache<Option<BlockLink<'a>>>,
 }
 
 #[derive(Hash)]
