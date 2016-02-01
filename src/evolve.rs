@@ -24,7 +24,7 @@ fn mk_small_evolve_cache() -> [u8; 1<<16] {
         for i in 0..2 {
             for j in 0..2 {
                 let subblock = (x >> (i+4*j)) & 0x777;
-                evolve |= res[subblock] << (i + 4*j);
+                evolve |= (res[subblock] & 1) << (i + 4*j);
             }
         }
         res[x] = evolve;
@@ -46,5 +46,26 @@ impl Hashlife {
             + (leafs[1][0] as usize) << 8
             + (leafs[1][1] as usize) << 10;
         self.small_evolve_cache[entry]
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{mk_small_evolve_cache};
+
+    #[test]
+    fn test_small_evolve_cache() {
+        let cache = mk_small_evolve_cache();
+        macro_rules! test_cases {
+            ( $($test:expr => $result:expr),* ) =>
+                {{$(assert_eq!(cache[$test], $result);)*}};
+        }
+        test_cases! (
+            0x0070 => 0x11,
+            0x0e00 => 0x22,
+            0x1630 => 0x23,
+            0x0660 => 0x33,
+            0xffff => 0x00
+        )
     }
 }
