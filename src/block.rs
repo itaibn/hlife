@@ -1,3 +1,5 @@
+use cache::Cache;
+
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher, SipHasher};
 use std::mem;
@@ -16,8 +18,7 @@ use std::mem;
 // The type HeapBlock<'a> corresponds to a block with all references having
 // lifetime 'a (including all references in blocks that it references,
 // recursively). Since HeapBlock<'a> includes cache data with references to
-// other blocks and interior mutability, it is invariant in 'a [currently this
-// is not implemented so it is covariant in 'a].
+// other blocks and interior mutability, it is invariant in 'a.
 
 // A hashtable with all the blocks used for a Hashlife computation.
 pub struct CABlockCache (HashMap<u64, UnsafeBlock>);
@@ -44,14 +45,14 @@ impl UnsafeBlock {
     }
 
     unsafe fn to_heap_block<'a>(&self) -> &HeapBlock<'a> {
-        // This will fail when HeapBlock<'a> becomes invariant
-        &self.0
+        mem::transmute(&self.0)
     }
 }
 
 pub struct HeapBlock<'a> {
     content: BlockDesc<'a>,
     hash: u64,
+    evolve: Cache<Block<'a>>,
 }
 
 #[derive(Hash)]
@@ -69,6 +70,7 @@ impl<'a> HeapBlock<'a> {
         HeapBlock {
             content: desc,
             hash: hash,
+            evolve: Cache::new(),
         }
     }    
 }
