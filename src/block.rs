@@ -30,12 +30,12 @@ impl CABlockCache {
 
     pub fn get_block<'a>(&'a mut self, desc: BlockDesc<'a>) -> BlockLink<'a> {
         let hash = hash(&desc);
-        let unsafe_block = self.0.entry(hash).or_insert_with(||
+        let unsafe_block: mut UnsafeBlock = self.0.entry(hash).or_insert_with(||
             UnsafeBlock::from_heap_block(
                 Block::from_desc_and_hash(desc, hash)
             )
         );
-        unsafe {&unsafe_block.to_heap_block()}
+        unsafe {unsafe_block.to_heap_block()}
     }
 }
 
@@ -44,15 +44,15 @@ impl UnsafeBlock {
         unsafe {UnsafeBlock(mem::transmute(heap_block))}
     }
 
-    unsafe fn to_heap_block<'a>(&self) -> &Block<'a> {
+    unsafe fn to_heap_block<'a, 'b>(&'b self) -> &'b Block<'a> {
         mem::transmute(&self.0)
     }
 }
 
 pub struct Block<'a> {
-    content: BlockDesc<'a>,
+    pub content: BlockDesc<'a>,
     hash: u64,
-    evolve: Cache<Option<BlockLink<'a>>>,
+    pub evolve: Cache<Option<BlockLink<'a>>>,
 }
 
 #[derive(Hash)]
