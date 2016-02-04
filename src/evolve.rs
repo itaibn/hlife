@@ -40,21 +40,28 @@ impl Hashlife {
         }
     }
 
-    fn evolve(&'a mut self, block: BlockLink<'a>) -> Option<BlockLink<'a>> {
-        block.evolve.eval(||
+    fn evolve<'a>(&'a mut self, block: BlockLink<'a>) -> Option<BlockLink<'a>> {
+        use block::BlockDesc::*;
+
+        block.evolve.eval(move ||
             match block.content {
                 Leaf(_) => None,
-                Node(ref x) => match x[0][0].content {
-                    Leaf(a00) => {
-                        let Leaf(a01) = x[0][1].content;
-                        let Leaf(a10) = x[1][0].content;
-                        let Leaf(a11) = x[1][1].content;
-                        Some(self.evolve_leaf([[a00, a01], [a10, a11]]))
-                    },
-                    Node(_) => unimplemented!()
+                Node(ref x) => {
+                    match x[0][0].content {
+                        Leaf(a00) => {
+                            let a01 = x[0][1].content.unwrap_leaf();
+                            let a10 = x[1][0].content.unwrap_leaf();
+                            let a11 = x[1][1].content.unwrap_leaf();
+                            let res_leaf = self.evolve_leaf(
+                                [[a00, a01], [a10, a11]]);
+                            Some(self.table.new_block(Leaf(res_leaf)))
+                        },
+                        Node(_) => unimplemented!()
+                    }
                 }
             }
         )
+        //None
     }
 
     fn evolve_leaf(&self, leafs: [[u8; 2]; 2]) -> u8 {

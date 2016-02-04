@@ -28,9 +28,9 @@ struct UnsafeBlock(Block<'static>);
 impl CABlockCache {
     pub fn new() -> Self {CABlockCache (HashMap::new())}
 
-    pub fn get_block<'a>(&'a mut self, desc: BlockDesc<'a>) -> BlockLink<'a> {
+    pub fn new_block<'a>(&'a mut self, desc: BlockDesc<'a>) -> BlockLink<'a> {
         let hash = hash(&desc);
-        let unsafe_block: mut UnsafeBlock = self.0.entry(hash).or_insert_with(||
+        let unsafe_block: &mut UnsafeBlock = self.0.entry(hash).or_insert_with(||
             UnsafeBlock::from_heap_block(
                 Block::from_desc_and_hash(desc, hash)
             )
@@ -57,12 +57,13 @@ pub struct Block<'a> {
 
 #[derive(Hash)]
 pub enum BlockDesc<'a> {
-    Node([[BlockLink<'a>; 2]; 2]),
+    Node(Node<'a>),
     Leaf(Leaf),
 }
 
 pub type BlockLink<'a> = &'a Block<'a>;
 pub type Leaf = u8;
+pub type Node<'a> = [[BlockLink<'a>; 2]; 2];
 
 
 impl<'a> Block<'a> {
@@ -87,4 +88,20 @@ fn hash<T: Hash>(t: &T) -> u64 {
     let mut s = SipHasher::new();
     t.hash(&mut s);
     s.finish()
+}
+
+impl<'a> BlockDesc<'a> {
+    pub fn unwrap_leaf(&self) -> Leaf {
+        match *self {
+            BlockDesc::Leaf(l) => l,
+            _ => panic!("unwrap_leaf: Not a leaf"),
+        }
+    }
+
+    pub fn unwrap_node(&self) -> &Node<'a> {
+        match *self {
+            BlockDesc::Node(ref n) => &n,
+            _ => panic!("unwrap_node: Not a node"),
+        }
+    }
 }
