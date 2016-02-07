@@ -33,16 +33,18 @@ fn mk_small_evolve_cache() -> [u8; 1<<16] {
 }
 
 impl<'a> Hashlife<'a> {
-    /*
-    pub fn new() -> Self {
-        Hashlife {
-            table: CABlockCache::new(),
-            small_evolve_cache: mk_small_evolve_cache(),
-        }
+    pub fn with_hashlife<F,T>(f: F) -> T
+        where F: for<'b> FnOnce(Hashlife<'b>) -> T {
+        CABlockCache::with_block_cache(|bcache| {
+            let hashlife = Hashlife {
+                table: bcache,
+                small_evolve_cache: mk_small_evolve_cache(),
+            };
+            f(hashlife)
+        })
     }
-    */
 
-    fn evolve(&mut self, block: BlockLink<'a>) -> Option<BlockLink<'a>> {
+    pub fn evolve(&mut self, block: BlockLink<'a>) -> Option<BlockLink<'a>> {
         use block::BlockDesc::*;
 
         block.evolve.eval(move ||
@@ -62,17 +64,66 @@ impl<'a> Hashlife<'a> {
                         // recursively, to check if all the lifetime hackery is
                         // correct
                         Node(_) => {
-                            {self.evolve(x[0][0]);}
-                            {self.evolve(x[0][1]);}
-                            unimplemented!()
+                            let mut intermediates = [[block; 3]; 3];
+                            for i in 0..3 {
+                                for j in 0..3 {
+                                    let subblock = self.subblock(block, i as u8,
+                                        j as u8);
+                                    intermediates[i][j] = self.evolve(subblock)
+                                        .unwrap();
+                                }
+                            }
+                            Some(self.evolve_finish(intermediates))
                         }
                     }
                 }
             }
         )
-        //None
     }
 
+    fn evolve_finish(&mut self, parts: [[BlockLink<'a>; 3]; 3]) -> BlockLink<'a>
+    {
+        use block::BlockDesc::*;
+
+        let mut res_components = [[parts[0][0]; 2]; 2];
+        for i in 0..2 {
+            for j in 0..2 {
+                let mut section = [[parts[0][0]; 2]; 2];
+                for x in 0..2 {
+                    for y in 0..2 {
+                        section[x][y] = parts[i+x][j+y];
+                    }
+                }
+                let subpart = self.table.new_block(Node(section));
+                res_components[i][j] = self.evolve(subpart).unwrap();
+            }
+        }
+        self.table.new_block(Node(res_components))
+    }
+
+    #[inline]
+    fn subblock(&mut self, block: BlockLink<'a>, x: u8, y: u8) -> BlockLink<'a>
+    {
+        let (x, y) = (x as usize, y as usize);
+
+        let node = block.content.unwrap_node();
+        if (x|y)&1 == 0 {
+            node[x/2][y/2]
+        } else {
+            let mut components = [[block; 2]; 2];
+            for i in 0..2 {
+                for j in 0..2 {
+                    let xx = i+x;
+                    let yy = j+y;
+                    components[i][j] = node[xx/2][yy/2]
+                        .content.unwrap_node()[xx&1][yy&1];
+                }
+            }
+            self.table.new_block(BlockDesc::Node(components))
+        }
+    }
+
+    #[inline]
     fn evolve_leaf(&self, leafs: [[u8; 2]; 2]) -> u8 {
         let entry = leafs[0][0] as usize
             + (leafs[0][1] as usize) << 2
