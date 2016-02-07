@@ -2,6 +2,7 @@
 
 mod block;
 mod cache;
-mod evolve;
+// Temporarily not build `evolve` while refactoring `block`.
+//mod evolve;
 
 pub use block::*;

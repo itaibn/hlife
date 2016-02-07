@@ -21,7 +21,7 @@ use std::hash::{Hash, Hasher, SipHasher};
 // other blocks and interior mutability, it is invariant in 'a.
 
 // A hashtable with all the blocks used for a Hashlife computation.
-pub struct CABlockCache<'a> (HashMap<u64, Box<Block<'a>>>);
+pub struct CABlockCache<'a> (HashMap<u64, Box<HeapNode<'a>>>);
 
 impl<'a> CABlockCache<'a> {
     pub fn with_block_cache<F, T>(f: F) -> T
@@ -31,43 +31,40 @@ impl<'a> CABlockCache<'a> {
         f(ca_block_cache)
     }
 
-    pub fn new_block(&mut self, desc: BlockDesc<'a>) -> BlockLink<'a> {
-        let hash = hash(&desc);
-        let blockref: &Block<'a> = &**self.0.entry(hash).or_insert_with(||
-            Box::new(Block::from_desc_and_hash(desc, hash)));
-        //unsafe {mem::transmute::<&Block<'a>, &'a Block<'a>>(blockref)}
+    pub fn new_block(&mut self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
+        let hash = hash(&elems);
+        let blockref: &HeapNode<'a> = &**self.0.entry(hash).or_insert_with(||
+            Box::new(HeapNode::from_elems_and_hash(elems, hash)));
         unsafe {&*(blockref as *const _)}
     }
 }
 
-pub struct Block<'a> {
-    pub content: BlockDesc<'a>,
+pub struct HeapNode<'a> {
+    pub content: [[Block<'a>; 2]; 2],
     hash: u64,
-    pub evolve: Cache<Option<BlockLink<'a>>>,
+    pub evolve: Cache<Block<'a>>,
 }
 
-#[derive(Hash)]
-pub enum BlockDesc<'a> {
+#[derive(Clone, Copy, Hash)]
+pub enum Block<'a> {
     Node(Node<'a>),
     Leaf(Leaf),
 }
 
-pub type BlockLink<'a> = &'a Block<'a>;
+pub type Node<'a> = &'a HeapNode<'a>;
 pub type Leaf = u8;
-pub type Node<'a> = [[BlockLink<'a>; 2]; 2];
 
-
-impl<'a> Block<'a> {
-    fn from_desc_and_hash(desc: BlockDesc, hash: u64) -> Block {
-        Block {
-            content: desc,
+impl<'a> HeapNode<'a> {
+    fn from_elems_and_hash(elems: [[Block; 2]; 2], hash: u64) -> HeapNode {
+        HeapNode {
+            content: elems,
             hash: hash,
             evolve: Cache::new(),
         }
-    }    
+    }
 }
 
-impl<'a> Hash for Block<'a> {
+impl<'a> Hash for HeapNode<'a> {
     fn hash<H:Hasher>(&self, state: &mut H) {
         state.write_u64(self.hash);
     }
@@ -81,17 +78,17 @@ fn hash<T: Hash>(t: &T) -> u64 {
     s.finish()
 }
 
-impl<'a> BlockDesc<'a> {
+impl<'a> Block<'a> {
     pub fn unwrap_leaf(&self) -> Leaf {
         match *self {
-            BlockDesc::Leaf(l) => l,
+            Block::Leaf(l) => l,
             _ => panic!("unwrap_leaf: Not a leaf"),
         }
     }
 
     pub fn unwrap_node(&self) -> &Node<'a> {
         match *self {
-            BlockDesc::Node(ref n) => &n,
+            Block::Node(ref n) => &n,
             _ => panic!("unwrap_node: Not a node"),
         }
     }
