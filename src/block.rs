@@ -15,30 +15,41 @@ use std::mem;
 // unsafe Rust to simulate such a feature, and I'm not convinced my
 // implementation is safe.
 //
+// [Note: I am right now working on changing the implementation; the paragraph
+// below may not be accurate.]
+//
 // The type Block<'a> corresponds to a block with all references having
 // lifetime 'a (including all references in blocks that it references,
 // recursively). Since Block<'a> includes cache data with references to
 // other blocks and interior mutability, it is invariant in 'a.
 
 // A hashtable with all the blocks used for a Hashlife computation.
-pub struct CABlockCache (HashMap<u64, UnsafeBlock>);
+pub struct CABlockCache<'a> (HashMap<u64, Box<Block<'a>>>);
 
 struct UnsafeBlock(Block<'static>);
 
-impl CABlockCache {
+impl<'a> CABlockCache<'a> {
     pub fn new() -> Self {CABlockCache (HashMap::new())}
 
-    pub fn new_block<'a>(&'a mut self, desc: BlockDesc<'a>) -> BlockLink<'a> {
+    pub fn new_block(&mut self, desc: BlockDesc<'a>) -> BlockLink<'a> 
+        //where 'b : 'a {
+        {
+
         let hash = hash(&desc);
+        /*
         let unsafe_block: &mut UnsafeBlock = self.0.entry(hash).or_insert_with(||
             UnsafeBlock::from_heap_block(
                 Block::from_desc_and_hash(desc, hash)
             )
         );
-        unsafe {unsafe_block.to_heap_block()}
+        */
+        let blockref = &*self.0.entry(hash).or_insert_with(||
+            Box::new(Block::from_desc_and_hash(desc, hash)));
+        unsafe {mem::transmute::<&Block<'a>, &'a Block<'a>>(blockref)}
     }
 }
 
+/*
 impl UnsafeBlock {
     fn from_heap_block(heap_block: Block) -> UnsafeBlock {
         unsafe {UnsafeBlock(mem::transmute(heap_block))}
@@ -48,6 +59,7 @@ impl UnsafeBlock {
         mem::transmute(&self.0)
     }
 }
+*/
 
 pub struct Block<'a> {
     pub content: BlockDesc<'a>,
@@ -104,4 +116,13 @@ impl<'a> BlockDesc<'a> {
             _ => panic!("unwrap_node: Not a node"),
         }
     }
+}
+
+struct CABlockCacheRef<'a> (&'a mut CABlockCache<'a>);
+
+fn with_block_cache<F,T>(f: F) -> T
+    where F : for<'a> FnOnce(CABlockCacheRef<'a>) -> T {
+
+    let mut cache = CABlockCache::new();
+    f(CABlockCacheRef(&mut cache))
 }

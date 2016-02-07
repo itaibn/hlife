@@ -1,7 +1,7 @@
 use block::*;
 
-struct Hashlife {
-    table: CABlockCache,
+struct Hashlife<'a> {
+    table: CABlockCache<'a>,
     small_evolve_cache: [u8; 1<<16],
 }
 
@@ -32,15 +32,17 @@ fn mk_small_evolve_cache() -> [u8; 1<<16] {
     res
 }
 
-impl Hashlife {
+impl<'a> Hashlife<'a> {
+    /*
     pub fn new() -> Self {
         Hashlife {
             table: CABlockCache::new(),
             small_evolve_cache: mk_small_evolve_cache(),
         }
     }
+    */
 
-    fn evolve<'a>(&'a mut self, block: BlockLink<'a>) -> Option<BlockLink<'a>> {
+    fn evolve(&mut self, block: BlockLink<'a>) -> Option<BlockLink<'a>> {
         use block::BlockDesc::*;
 
         block.evolve.eval(move ||
@@ -56,7 +58,14 @@ impl Hashlife {
                                 [[a00, a01], [a10, a11]]);
                             Some(self.table.new_block(Leaf(res_leaf)))
                         },
-                        Node(_) => unimplemented!()
+                        // Make sure there's a branch which calls evolve()
+                        // recursively, to check if all the lifetime hackery is
+                        // correct
+                        Node(_) => {
+                            {self.evolve(x[0][0]);}
+                            {self.evolve(x[0][1]);}
+                            unimplemented!()
+                        }
                     }
                 }
             }
