@@ -1,6 +1,7 @@
-use block::*;
+pub use block::{Block, Node, Leaf};
+use block::CABlockCache;
 
-struct Hashlife<'a> {
+pub struct Hashlife<'a> {
     table: CABlockCache<'a>,
     small_evolve_cache: [u8; 1<<16],
     //placeholder_node: Node<'a>,
@@ -48,22 +49,20 @@ impl<'a> Hashlife<'a> {
     }
 
     pub fn evolve(&mut self, node: Node<'a>) -> Block<'a> {
-        use block::Block::*;
-        
         let elem = node.content;
 
         node.evolve.eval(move ||
             match elem[0][0] {
-                Leaf(a00) => {
+                Block::Leaf(a00) => {
                     let a01 = elem[0][1].unwrap_leaf();
                     let a10 = elem[1][0].unwrap_leaf();
                     let a11 = elem[1][1].unwrap_leaf();
                     let res_leaf = self.evolve_leaf(
                         [[a00, a01], [a10, a11]]);
-                    Leaf(res_leaf)
+                    Block::Leaf(res_leaf)
                 },
-                Node(_) => {
-                    let mut intermediates = [[Node(node); 3]; 3];
+                Block::Node(_) => {
+                    let mut intermediates = [[Block::Node(node); 3]; 3];
                     for i in 0..3 {
                         for j in 0..3 {
                             // I don't know we need two separate `let`
@@ -83,8 +82,6 @@ impl<'a> Hashlife<'a> {
 
     fn evolve_finish(&mut self, parts: [[Block<'a>; 3]; 3]) -> Block<'a>
     {
-        use block::Block::*;
-
         let mut res_components = [[parts[0][0]; 2]; 2];
         for i in 0..2 {
             for j in 0..2 {
@@ -98,7 +95,7 @@ impl<'a> Hashlife<'a> {
                 res_components[i][j] = self.evolve(subpart);
             }
         }
-        Node(self.table.new_block(res_components))
+        Block::Node(self.table.new_block(res_components))
     }
 
     fn subblock(&mut self, node: Node<'a>, x: u8, y: u8) -> Block<'a>
@@ -147,7 +144,7 @@ impl<'a> Hashlife<'a> {
     }
 
     #[inline]
-    fn evolve_leaf(&self, leafs: [[u8; 2]; 2]) -> u8 {
+    fn evolve_leaf(&self, leafs: [[Leaf; 2]; 2]) -> u8 {
         let entry = leafs[0][0] as usize
             + (leafs[0][1] as usize) << 2
             + (leafs[1][0] as usize) << 8
