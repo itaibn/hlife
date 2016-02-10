@@ -109,8 +109,10 @@ impl<'a> Hashlife<'a> {
         if (x|y)&1 == 0 {
             node.content[x/2][y/2]
         } else {
-            // Code is wrong; will panic on depth-1 node
-            self.subblock_node(node, x, y)
+            match node.content[0][0] {
+                Block::Leaf(_) => self.subblock_leaf(node, x, y),
+                Block::Node(_) => self.subblock_node(node, x, y),
+            }
         }
     }
 
@@ -127,6 +129,21 @@ impl<'a> Hashlife<'a> {
             }
         }
         Block::Node(self.table.new_block(components))
+    }
+
+    fn subblock_leaf(&mut self, node: Node<'a>, x: usize, y: usize) -> Block<'a>
+    {
+        let mut output_leaf = 0;
+        for i in 0..2 {
+            for j in 0..2 {
+                let xx = i+x;
+                let yy = j+y;
+                let cell = 1 & (node.content[xx/2][yy/2].unwrap_leaf()
+                    >> (xx&2 + 4*(yy&2)));
+                output_leaf |= cell << (i + 4*j);
+            }
+        }
+        Block::Leaf(output_leaf)
     }
 
     #[inline]
