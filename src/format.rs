@@ -5,17 +5,7 @@ use std::io::{self, Read};
 use std::result;
 use std::str;
 
-//use nom::space;
 use nom::*;
-
-/*
-define_macro! opt_try {
-    ( $e:expr ) => {match $e {
-        Some(x) => x,
-        None => {return None;},
-    }}
-}
-*/
 
 #[derive(Debug, PartialEq, Eq)]
 struct ParseError;
@@ -35,26 +25,6 @@ struct RLEMeta{
     //rule: ...
 }
 
-fn fst_char(s: &str) -> Option<char> {s.chars().next()}
-
-fn parse_u64(s: &str) -> Result<(u64, &str)> {
-    let mut chars = s.chars();
-    let mut res = 0;
-    let mut any = false;
-    loop {
-        match chars.clone().next().and_then(|c| c.to_digit(10)) {
-            Some(d) => {res = 10*res + d as u64; any = true;},
-            None => {break;},
-        }
-        chars.next();
-    }
-    if !any {
-        Err(ParseError)
-    } else {
-        Ok((res, chars.as_str()))
-    }
-}
-
 fn parse_rle_line(line: &str) -> LineParse {
     let mut rest = line;
     rest = rest.trim_left();
@@ -66,35 +36,46 @@ fn parse_rle_line(line: &str) -> LineParse {
     }
 }
 
+fn fst_char(s: &str) -> Option<char> {s.chars().next()}
+
+fn digits_to_u64(x: &[u8]) -> u64 {
+    u64::from_str_radix(str::from_utf8(x).unwrap(), 10).unwrap()
+}
+
+named!(uint<&[u8], u64>,
+    map!(
+        digit,
+        |x| u64::from_str_radix(str::from_utf8(x).unwrap(), 10).unwrap()
+    )
+);
+
 named!(rle_meta<&[u8], RLEMeta>,
     chain!(
-        many0!(space) ~
+        space? ~
         tag!("x") ~
-        many0!(space) ~
+        space? ~
         tag!("=") ~
-        many0!(space) ~
-        x: digit ~
-        many0!(space) ~
+        space? ~
+        x: uint ~
+        space? ~
         tag!(",") ~
-        many0!(space) ~
+        space? ~
         tag!("y") ~
-        many0!(space) ~
+        space? ~
         tag!("=") ~
-        many0!(space) ~
-        y: digit ~
-        many0!(space) ~
+        space? ~
+        y: uint ~
+        space? ~
         tag!(",") ~
-        many0!(space) ~
+        space? ~
         tag!("rule") ~
-        many0!(space) ~
+        space? ~
         tag!("=") ~
-        many0!(space) ~
+        space? ~
         // Replace with rule grammar
-        many0!(not_line_ending)
+        not_line_ending
         ,
-        || {RLEMeta {
-            x: u64::from_str_radix(str::from_utf8(x).unwrap(), 10).unwrap(),
-            y: u64::from_str_radix(str::from_utf8(y).unwrap(), 10).unwrap()}}
+        || {RLEMeta {x: x, y: y}}
     )
 );
 
@@ -104,47 +85,6 @@ fn parse_rle_meta(line: &str) -> Result<RLEMeta> {
         IResult::Done(_, res) => Ok(res),
         _ => Err(ParseError),
     }
-/*
-    let mut rest = line;
-    if !rest.starts_with("x") {
-        return Err(ParseError);
-    }
-    rest = rest[1..].trim_left();
-    if !rest.starts_with("=") {
-        return Err(ParseError);
-    }
-    rest = rest[1..].trim_left();
-    let (x, rest_) = try!(parse_u64(rest));
-    rest = rest_.trim_left();
-    if !rest.starts_with(",") {
-        return Err(ParseError);
-    }
-    rest = rest[1..].trim_left();
-    if !rest.starts_with("y") {
-        return Err(ParseError);
-    }
-    rest = rest[1..].trim_left();
-    if !rest.starts_with("=") {
-        return Err(ParseError);
-    }
-    rest = rest[1..].trim_left();
-    let (y, rest_) = try!(parse_u64(rest));
-    rest = rest_.trim_left();
-    if !rest.starts_with(",") {
-        return Err(ParseError);
-    }
-    rest = rest[1..].trim_left();
-    if !rest.starts_with("rule") {
-        return Err(ParseError);
-    }
-    rest = rest[4..].trim_left();
-    if !rest.starts_with("=") {
-        return Err(ParseError);
-    }
-    rest = &rest[1..];
-    // Don't parse rule for now
-    Ok(RLEMeta {x: x, y: y})
-*/
 }
 
 #[cfg(test)]
@@ -181,4 +121,6 @@ fn test_parse_rle_meta_1() {
 fn test_parse_rle_meta_2() {
     assert_eq!(parse_rle_meta("x=3,y=8,rule=B3/S23"),
         Ok(RLEMeta{x:3,y:8}));
+    assert_eq!(parse_rle_meta("x=33,y=27421,rule=B3/S23"),
+        Ok(RLEMeta{x:33,y:27421}));
 }
