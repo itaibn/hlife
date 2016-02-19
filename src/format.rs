@@ -3,9 +3,18 @@
 //use std::str::Chars;
 use std::io::{self, Read};
 use std::result;
-use std::str;
+use std::str::{self, FromStr};
 
 use nom::*;
+
+macro_rules! assert_parse {
+    ($str:expr => $parser:expr, $res:expr) => {
+        match $parser($str) {
+            IResult::Done(_, parsed) => assert_eq!(parsed, $res),
+            err => panic!("Failed parse: {:?}", err),
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 struct ParseError;
@@ -18,12 +27,22 @@ enum LineParse {
 
 // TODO: Replace u64 by bignums
 #[derive(Debug, PartialEq, Eq)]
-struct RLEMeta{
+struct RLEMeta {
     x: u64,
     y: u64,
     //TODO
     //rule: ...
 }
+
+#[derive(Debug, PartialEq, Eq)]
+enum RLEToken {
+    Run(usize, State),
+    EndLine,
+    EndBlock,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum State {Dead, Alive}
 
 fn parse_rle_line(line: &str) -> LineParse {
     let mut rest = line;
@@ -43,9 +62,11 @@ fn digits_to_u64(x: &[u8]) -> u64 {
 }
 
 named!(uint<&[u8], u64>,
-    map!(
+    map_res!(
         digit,
-        |x| u64::from_str_radix(str::from_utf8(x).unwrap(), 10).unwrap()
+        // `unwrap` should never panic since `digit` only accepts ASCII
+        // characters.
+        |x| u64::from_str(str::from_utf8(x).unwrap())
     )
 );
 
@@ -78,6 +99,41 @@ named!(rle_meta<&[u8], RLEMeta>,
         || {RLEMeta {x: x, y: y}}
     )
 );
+
+fn rle_cell_state(input: &[u8]) -> IResult<&[u8], State> {
+    if input.len() == 0 {
+        IResult::Incomplete(Needed::Size(1))
+    } else {
+        match input[0] {
+            b'b' => IResult::Done(&input[1..], State::Dead),
+            b'o' => IResult::Done(&input[1..], State::Alive),
+            _ => IResult::Error(Err::Position(ErrorKind::Tag, input)),
+        }
+    }
+}
+
+named!(rle_token<&[u8], RLEToken>,
+    alt!(
+        chain!(count: uint? ~ state: rle_cell_state,
+            || RLEToken::Run(count.unwrap_or(1) as usize, state))
+        | map!(tag!("$"), |_| RLEToken::EndLine)
+        | map!(tag!("!"), |_| RLEToken::EndBlock)
+    )
+);
+
+named!(rle_line<&[u8], Vec<RLEToken> >, many0!(rle_token));
+
+#[cfg(test)]
+#[test]
+fn test_rle_line() {
+    use self::RLEToken::*;
+    use self::State::*;
+
+    assert_parse!(b"bo$bbo$3o!" => rle_line,
+        vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Dead), Run(1, Dead),
+            Run(1, Alive), EndLine, Run(3, Alive), EndBlock]
+    );
+}
 
 // Parse one line known to be RLE metainformation.
 fn parse_rle_meta(line: &str) -> Result<RLEMeta> {
