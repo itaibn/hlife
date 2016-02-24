@@ -14,16 +14,66 @@ macro_rules! assert_parse {
     }
 }
 
+named!(parse_file<&[u8], ParseOut>,
+    map!(many0!(parse_line), process_lines)
+);
+
+named!(parse_line<&[u8], LineParse>,
+    chain!(
+        out: alt!(
+              map!(comment, LineParse::Comment)
+            | map!(rle_meta, LineParse::RLEMeta)
+            | map!(rle_line, LineParse::RLELine)
+        )
+        ~ line_ending,
+        || out
+    )
+);
+
+// Temp type before I figure out the output of the parser
+struct ParseOut;
+
 struct ParseError;
 type Result<T> = result::Result<T, ParseError>;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum LineParse {
+    Comment(Comment),
     RLEMeta(RLEMeta),
+    RLELine(Vec<RLEToken>),
 }
 
+// TODO: Return error instead of panicking.
+fn process_lines(lines: Vec<LineParse>) -> ParseOut {
+    // For now, assume the format is RLE
+    let mut cur_meta: Option<Option<RLEMeta>> = None;
+    let mut cur_tokens = Vec::new();
+
+    for line in lines {
+        match line {
+            LineParse::Comment(_) => {},
+            LineParse::RLEMeta(ref meta) => {
+                if cur_meta.is_some() {
+                    panic!("RLE metainformation in inappropiate location");
+                } else {
+                    cur_meta = Some(Some(meta.clone()));
+                }
+            }
+            LineParse::RLELine(ref tokens) => {    
+                cur_meta = cur_meta.or(Some(None));
+                cur_tokens.extend_from_slice(tokens);
+            }
+        }
+    }
+
+    // Turn tokens to output.
+    unimplemented!()
+}
+
+type Comment = ();
+
 // TODO: Replace u64 by bignums
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct RLEMeta {
     x: u64,
     y: u64,
@@ -31,14 +81,14 @@ struct RLEMeta {
     //rule: ...
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum RLEToken {
     Run(usize, State),
     EndLine,
     EndBlock,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum State {Dead, Alive}
 
 named!(uint<&[u8], u64>,
@@ -47,6 +97,12 @@ named!(uint<&[u8], u64>,
         // `unwrap` should never panic since `digit` only accepts ASCII
         // characters.
         |x| u64::from_str(str::from_utf8(x).unwrap())
+    )
+);
+
+named!(comment<&[u8], ()>,
+    map!(tuple!(space, opt!(tuple!(tag!("#"), not_line_ending))),
+        |_| ()
     )
 );
 
