@@ -39,13 +39,15 @@ impl<'a> CABlockCache<'a> {
     }
 }
 
+// Note: uncertain if default implementation of Debug is right
+#[derive(Debug)]
 pub struct HeapNode<'a> {
     pub content: [[Block<'a>; 2]; 2],
     hash: u64,
     pub evolve: Cache<Block<'a>>,
 }
 
-#[derive(Clone, Copy, Hash)]
+#[derive(Clone, Copy, Debug, Hash)]
 pub enum Block<'a> {
     Node(Node<'a>),
     Leaf(Leaf),
@@ -53,6 +55,8 @@ pub enum Block<'a> {
 
 pub type Node<'a> = &'a HeapNode<'a>;
 pub type Leaf = u8;
+
+pub const LEAF_SIZE: usize = 2;
 
 impl<'a> HeapNode<'a> {
     fn from_elems_and_hash(elems: [[Block; 2]; 2], hash: u64) -> HeapNode {

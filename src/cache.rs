@@ -1,6 +1,7 @@
 use std::cell::Cell;
 
-pub struct Cache<T>(Cell<Option<T>>);
+#[derive(Debug)]
+pub struct Cache<T:Copy>(Cell<Option<T>>);
 
 impl<T:Copy> Cache<T> {
     pub fn new() -> Self {

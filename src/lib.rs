@@ -4,6 +4,6 @@ extern crate nom;
 mod block;
 mod cache;
 pub mod evolve;
-mod format;
+pub mod format;
 
 pub use evolve::Hashlife;

@@ -82,14 +82,14 @@ struct RLEMeta {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum RLEToken {
+pub enum RLEToken {
     Run(usize, State),
     EndLine,
     EndBlock,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum State {Dead, Alive}
+pub enum State {Dead, Alive}
 
 named!(uint<&[u8], u64>,
     map_res!(
