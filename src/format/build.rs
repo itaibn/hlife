@@ -119,8 +119,8 @@ mod test {
         CABlockCache::with_block_cache(|mut cache| {
             assert_eq!(cache.block_from_rle(&tokens0), Block::Leaf(0x12));
             let node = cache.new_block([[Block::Leaf(0x03), Block::Leaf(0x01)],
-                [Block::Leaf(0x10), Block::Leaf(0x00)]]);
-            //assert_eq!(cache.block_from_rle(&tokens1), Block::Node(node));
+                [Block::Leaf(0x01), Block::Leaf(0x00)]]);
+            assert_eq!(cache.block_from_rle(&tokens1), Block::Node(node));
         });
     }
 }
