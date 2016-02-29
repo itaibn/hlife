@@ -6,6 +6,7 @@ authors = ["Itai Bar-Natan <itaibn3141@gmail.com>"]
 [features]
 
 default = []
+clippy_pedantic = ["clippy"]
 
 [dependencies]
 nom = "1.2.0"
