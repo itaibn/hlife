@@ -30,7 +30,7 @@ fn tokens_to_matrix(tokens: &[RLEToken]) -> Vec<Vec<State>> {
         }
     }
 
-    panic!("RLE with not end.")
+    panic!("RLE with no end.")
 }
 
 impl<'a> CABlockCache<'a> {
@@ -57,12 +57,15 @@ impl<'a> CABlockCache<'a> {
     fn block_from_matrix(&mut self, depth: u32, matrix: Vec<&[State]>) ->
         Block<'a> {
 
+        assert_eq!(matrix.len(), LEAF_SIZE << depth);
+        for row in &matrix {assert_eq!(row.len(), LEAF_SIZE << depth);}
+
         if depth == 0 {
             Block::Leaf(states_to_leaf(&matrix))
         } else {
             let mut subblocks = [[Block::Leaf(0); 2]; 2];
             // Side-length of subblock.
-            let slen = 1 << (depth - 1);
+            let slen = LEAF_SIZE << (depth - 1);
             for i in 0..2 {
                 for j in 0..2 {
                     let submatrix = submatrix(&matrix,
@@ -108,15 +111,16 @@ mod test {
         use format::parse::State::*;
         use block::{CABlockCache, Block};
 
-        let tokens = vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Alive),
+        let tokens0 = vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Alive),
+            EndBlock];
+        let tokens1 = vec![Run(3, Alive), EndLine, EndLine, Run(1, Alive),
             EndBlock];
 
         CABlockCache::with_block_cache(|mut cache| {
-            let block = cache.block_from_rle(&tokens);
-            match block {
-                Block::Leaf(0x12) => {/* Good */},
-                _ => panic!("{:?}", block),
-            }
+            assert_eq!(cache.block_from_rle(&tokens0), Block::Leaf(0x12));
+            let node = cache.new_block([[Block::Leaf(0x03), Block::Leaf(0x01)],
+                [Block::Leaf(0x10), Block::Leaf(0x00)]]);
+            //assert_eq!(cache.block_from_rle(&tokens1), Block::Node(node));
         });
     }
 }
