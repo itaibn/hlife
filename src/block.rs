@@ -35,6 +35,7 @@ impl<'a> CABlockCache<'a> {
         let hash = hash(&elems);
         let blockref: &HeapNode<'a> = &**self.0.entry(hash).or_insert_with(||
             Box::new(HeapNode::from_elems_and_hash(elems, hash)));
+        assert!(blockref.content == elems, "Hash collision");
         unsafe {&*(blockref as *const _)}
     }
 }
@@ -47,7 +48,7 @@ pub struct HeapNode<'a> {
     pub evolve: Cache<Block<'a>>,
 }
 
-#[derive(Clone, Copy, Debug, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Block<'a> {
     Node(Node<'a>),
     Leaf(Leaf),
@@ -67,6 +68,14 @@ impl<'a> HeapNode<'a> {
         }
     }
 }
+
+impl<'a> PartialEq for HeapNode<'a> {
+    fn eq(&self, other: &HeapNode<'a>) -> bool {
+        self.hash == other.hash
+    }
+}
+
+impl<'a> Eq for HeapNode<'a> { }
 
 impl<'a> Hash for HeapNode<'a> {
     fn hash<H:Hasher>(&self, state: &mut H) {
