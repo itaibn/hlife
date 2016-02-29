@@ -106,7 +106,7 @@ mod test {
     fn build_leaf() {
         use format::parse::RLEToken::*;
         use format::parse::State::*;
-        use block::{CABlockCache, Leaf, Block};
+        use block::{CABlockCache, Block};
 
         let tokens = vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Alive),
             EndBlock];
