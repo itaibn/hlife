@@ -136,7 +136,7 @@ impl<'a> Hashlife<'a> {
                 let xx = i+x;
                 let yy = j+y;
                 let cell = 1 & (node.content[xx/2][yy/2].unwrap_leaf()
-                    >> (xx&2 + 4*(yy&2)));
+                    >> ((xx&2) + 4*(yy&2)));
                 output_leaf |= cell << (i + 4*j);
             }
         }
@@ -146,9 +146,9 @@ impl<'a> Hashlife<'a> {
     #[inline]
     fn evolve_leaf(&self, leafs: [[Leaf; 2]; 2]) -> u8 {
         let entry = leafs[0][0] as usize
-            + (leafs[0][1] as usize) << 2
-            + (leafs[1][0] as usize) << 8
-            + (leafs[1][1] as usize) << 10;
+            + ((leafs[0][1] as usize) << 2)
+            + ((leafs[1][0] as usize) << 8)
+            + ((leafs[1][1] as usize) << 10);
         self.small_evolve_cache[entry]
     }
 }

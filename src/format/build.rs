@@ -43,7 +43,7 @@ impl<'a> CABlockCache<'a> {
         let res_side: usize = max_side.next_power_of_two();
         let res_depth = (res_side / LEAF_SIZE).trailing_zeros();
 
-        for row in matrix.iter_mut() {
+        for row in &mut matrix {
             row.resize(res_side, State::Dead);
         }
 

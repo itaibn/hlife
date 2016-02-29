@@ -60,7 +60,8 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
                 }
             }
             LineParse::RLELine(ref tokens) => {    
-                cur_meta = cur_meta.or(Some(None));
+                // Make clippy happy, and use or_else instead of or
+                cur_meta = cur_meta.or_else(|| Some(None));
                 cur_tokens.extend_from_slice(tokens);
             }
         }

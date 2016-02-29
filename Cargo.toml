@@ -3,5 +3,10 @@ name = "hlife"
 version = "0.1.0"
 authors = ["Itai Bar-Natan <itaibn3141@gmail.com>"]
 
+[features]
+
+default = []
+
 [dependencies]
 nom = "1.2.0"
+clippy = {version = "*", optional = true}
