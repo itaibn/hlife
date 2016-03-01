@@ -48,6 +48,10 @@ impl<'a> Hashlife<'a> {
         })
     }
 
+    pub fn block_cache(&mut self) -> &mut CABlockCache<'a> {
+        &mut self.table
+    }
+
     pub fn evolve(&mut self, node: Node<'a>) -> Block<'a> {
         let elem = node.content;
 

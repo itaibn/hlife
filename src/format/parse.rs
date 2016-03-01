@@ -14,7 +14,7 @@ macro_rules! assert_parse {
     }
 }
 
-named!(parse_file<&[u8], ParseOut>,
+named!(pub parse_file<&[u8], ParseOut>,
     map!(many0!(parse_line), process_lines)
 );
 
@@ -31,7 +31,8 @@ named!(parse_line<&[u8], LineParse>,
 );
 
 // Temp type before I figure out the output of the parser
-struct ParseOut;
+pub type ParseOut = RLEOut;
+pub type RLEOut = Vec<RLEToken>;
 
 struct ParseError;
 type Result<T> = result::Result<T, ParseError>;
@@ -68,7 +69,7 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
     }
 
     // Turn tokens to output.
-    unimplemented!()
+    cur_tokens
 }
 
 type Comment = ();
