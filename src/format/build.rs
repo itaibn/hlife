@@ -38,9 +38,9 @@ impl<'a> CABlockCache<'a> {
         use std::cmp::max;
 
         let mut matrix = tokens_to_matrix(rle);
-        let max_row_len = matrix.iter().map(|row| row.len()).max().unwrap();
+        let max_row_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
         let max_side = max(max_row_len, matrix.len());
-        let res_side: usize = max_side.next_power_of_two();
+        let res_side: usize = max(max_side, LEAF_SIZE).next_power_of_two();
         let res_depth = (res_side / LEAF_SIZE).trailing_zeros();
 
         for row in &mut matrix {
@@ -51,6 +51,7 @@ impl<'a> CABlockCache<'a> {
         matrix.resize(res_side, empty_row);
 
         let matrix = matrix.iter().map(|row| &**row).collect();
+        //println!("depth {}", res_depth);
         self.block_from_matrix(res_depth, matrix)
     }
 
@@ -115,12 +116,14 @@ mod test {
             EndBlock];
         let tokens1 = vec![Run(3, Alive), EndLine, EndLine, Run(1, Alive),
             EndBlock];
+        let tokens2 = vec![EndBlock];
 
         CABlockCache::with_block_cache(|mut cache| {
             assert_eq!(cache.block_from_rle(&tokens0), Block::Leaf(0x12));
             let node = cache.new_block([[Block::Leaf(0x03), Block::Leaf(0x01)],
                 [Block::Leaf(0x01), Block::Leaf(0x00)]]);
             assert_eq!(cache.block_from_rle(&tokens1), Block::Node(node));
+            assert_eq!(cache.block_from_rle(&tokens2), Block::Leaf(0x00));
         });
     }
 }
