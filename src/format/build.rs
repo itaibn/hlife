@@ -1,7 +1,5 @@
 //! Make a block out of parsed RLE code.
 
-#![allow(dead_code)]
-
 use std::ops::Range;
 
 use block::{CABlockCache, Block, Leaf, LEAF_SIZE};

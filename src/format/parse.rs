@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-
-use std::result;
 use std::str::{self, FromStr};
 
 use nom::*;
@@ -33,9 +30,6 @@ named!(parse_line<&[u8], LineParse>,
 // Temp type before I figure out the output of the parser
 pub type ParseOut = RLEOut;
 pub type RLEOut = Vec<RLEToken>;
-
-struct ParseError;
-type Result<T> = result::Result<T, ParseError>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum LineParse {
@@ -170,14 +164,6 @@ fn test_rle_line() {
         vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Dead), Run(1, Dead),
             Run(1, Alive), EndLine, Run(3, Alive), EndBlock]
     );
-}
-
-// Parse one line known to be RLE metainformation.
-fn parse_rle_meta(line: &str) -> Result<RLEMeta> {
-    match rle_meta(line.as_bytes()) {
-        IResult::Done(_, res) => Ok(res),
-        _ => Err(ParseError),
-    }
 }
 
 #[test]
