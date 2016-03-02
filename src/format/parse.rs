@@ -161,7 +161,6 @@ named!(rle_token<&[u8], RLEToken>,
 
 named!(rle_line<&[u8], Vec<RLEToken> >, many0!(rle_token));
 
-#[cfg(test)]
 #[test]
 fn test_rle_line() {
     use self::RLEToken::*;
@@ -181,7 +180,6 @@ fn parse_rle_meta(line: &str) -> Result<RLEMeta> {
     }
 }
 
-#[cfg(test)]
 #[test]
 fn test_parse_rle_meta() {
     assert_parse!(b" x = 3 , y = 8 , rule = ?" => rle_meta,
