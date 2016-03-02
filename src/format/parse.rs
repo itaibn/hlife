@@ -192,3 +192,25 @@ fn test_parse_rle_meta() {
     assert_parse!(b"x=33,y=27421,rule=B3/S23" => rle_meta,
         RLEMeta {x:33, y:27421});
 }
+
+#[test]
+fn test_process_lines() {
+    use self::RLEToken::*;
+    //use RLEToken::{Run, EndBlock, EndLine};
+    use self::State::*;
+    //use self::LineParse::*;
+
+    let meta = LineParse::RLEMeta(RLEMeta {x: 5, y: 5});
+    let line0 = LineParse::RLELine(vec![Run(1, Alive), EndLine, Run(1, Alive)]);
+    let line1 = LineParse::RLELine(vec![Run(3, Dead), Run(1, Alive), EndBlock]);
+
+    assert_eq!(process_lines(vec![line0.clone()]), vec![Run(1, Alive), EndLine,
+        Run(1, Alive)]);
+    assert_eq!(process_lines(vec![meta.clone(), line0.clone()]),
+        vec![Run(1, Alive), EndLine, Run(1, Alive)]);
+    assert_eq!(process_lines(vec![line0.clone(), line1.clone()]),
+        vec![Run(1, Alive), EndLine, Run(1, Alive), Run(3, Dead), Run(1, Alive),
+            EndBlock]);
+    // Current implementation panics
+    //assert_eq!(process_lines(vec![line0, meta], /* Failure */))
+}
