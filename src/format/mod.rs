@@ -16,3 +16,13 @@ impl<'a> Hashlife<'a> {
         }
     }
 }
+
+// Test for parsing error found in ::evolve tests.
+#[test]
+fn test_block_from_bytes() {
+    use evolve::Hashlife;
+
+    Hashlife::with_hashlife(|mut hl| {
+        assert!(hl.block_from_bytes(b"bbo$boo$bbo!").is_some());
+    });
+}

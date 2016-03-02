@@ -159,7 +159,7 @@ impl<'a> Hashlife<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::{mk_small_evolve_cache};
+    use super::{mk_small_evolve_cache, Hashlife};
 
     #[test]
     fn test_small_evolve_cache() {
@@ -175,5 +175,33 @@ mod test {
             0x0660 => 0x33,
             0xffff => 0x00
         )
+    }
+
+    #[test]
+    fn test_evolve() {
+        let input_rles: [&'static [u8]; 2] = [
+            b"bbo$boo$bbo!",
+            b"x = 8, y = 8, rule = B3/S23
+            b3ob2o$bo2bobo$2obobo$bobob2o$obobob2o$2bo2b2o$ob2ob2o$bo2b3o!"
+        ];
+        let output_rles: [&'static [u8]; 2] = [
+            b"oo$bo!",
+            //b"x = 4, y = 4, rule = B3/S23
+            b"o$b2o$o$o!"
+        ];
+
+        Hashlife::with_hashlife(|mut hl| {
+            for (input_rle, output_rle) in input_rles.iter()
+                                                     .zip(output_rles.iter()) {
+                let input = hl.block_from_bytes(*input_rle)
+                              .expect(&format!("Error parsing {:?}",
+                                    String::from_utf8_lossy(input_rle)));
+                let output = hl.block_from_bytes(*output_rle)
+                               .expect(&format!("Error parsing {:?}",
+                                    String::from_utf8_lossy(input_rle)));
+
+                assert_eq!(hl.evolve(input.unwrap_node()), output)
+            }
+        });
     }
 }
