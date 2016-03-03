@@ -195,6 +195,16 @@ fn test_parse_rle_meta() {
 }
 
 #[test]
+fn test_parse_line() {
+    assert_parse!(b"x=1,y=1,rule=B3/S23\n" => parse_line,
+        LineParse::RLEMeta(RLEMeta {x: 1, y: 1}));
+    assert_parse!(b"3bo\n" => parse_line, 
+        LineParse::RLELine(vec![RLEToken::Run(3, State::Dead), RLEToken::Run(1,
+                                    State::Alive)]));
+    assert_parse!(b" #  Comment!\n" => parse_line, LineParse::Comment(Comment));
+}
+
+#[test]
 fn test_process_lines() {
     use self::RLEToken::*;
     //use RLEToken::{Run, EndBlock, EndLine};
@@ -214,4 +224,14 @@ fn test_process_lines() {
             EndBlock]);
     // Current implementation panics
     //assert_eq!(process_lines(vec![line0, meta], /* Failure */))
+}
+
+#[test]
+fn test_parse_file() {
+    use self::RLEToken::*;
+    use self::State::*;
+
+    assert_parse!(b"x = 5, y = 5, rule = B3/S23\nobo$3bo!\n" => parse_file,
+        vec![Run(1, Alive), Run(1, Dead), Run(1, Alive), EndLine, Run(3, Dead),
+             Run(1, Alive), EndBlock]);
 }
