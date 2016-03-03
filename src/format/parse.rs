@@ -66,7 +66,8 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
     cur_tokens
 }
 
-type Comment = ();
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct Comment;
 
 // TODO: Replace u64 by bignums
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -96,9 +97,9 @@ named!(uint<&[u8], u64>,
     )
 );
 
-named!(comment<&[u8], ()>,
+named!(comment<&[u8], Comment>,
     map!(tuple!(space, opt!(tuple!(tag!("#"), not_line_ending))),
-        |_| ()
+        |_| Comment
     )
 );
 
