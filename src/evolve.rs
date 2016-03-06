@@ -181,11 +181,11 @@ mod test {
     fn test_evolve() {
         let input_rles: [&'static [u8]; 2] = [
             b"bbo$boo$bbo!",
-            b"x = 8, y = 8, rule = B3/S23
+            b"x = 8, y = 8, rule = B3/S23\n\
             b3ob2o$bo2bobo$2obobo$bobob2o$obobob2o$2bo2b2o$ob2ob2o$bo2b3o!"
         ];
         let output_rles: [&'static [u8]; 2] = [
-            b"oo$bo!",
+            b"oo$oo!",
             //b"x = 4, y = 4, rule = B3/S23
             b"o$b2o$o$o!"
         ];
@@ -193,6 +193,9 @@ mod test {
         Hashlife::with_hashlife(|mut hl| {
             for (input_rle, output_rle) in input_rles.iter()
                                                      .zip(output_rles.iter()) {
+                print!("Testing:\n{}\n->\n{}\n",
+                    String::from_utf8_lossy(input_rle),
+                    String::from_utf8_lossy(output_rle));
                 let input = hl.block_from_bytes(*input_rle)
                               .expect(&format!("Error parsing {:?}",
                                     String::from_utf8_lossy(input_rle)));

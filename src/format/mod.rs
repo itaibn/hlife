@@ -9,7 +9,11 @@ impl<'a> Hashlife<'a> {
         use self::parse::parse_file;
         use nom::IResult;
 
-        if let IResult::Done(_, tokens) = parse_file(bytes) {
+        // TODO: Do this with less copying.
+        let mut with_newline = bytes.to_vec();
+        with_newline.push(b'\n');
+
+        if let IResult::Done(_, tokens) = parse_file(&with_newline) {
             Some(self.block_cache().block_from_rle(&tokens))
         } else {
             None

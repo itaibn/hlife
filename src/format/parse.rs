@@ -165,6 +165,7 @@ fn test_rle_line() {
         vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Dead), Run(1, Dead),
             Run(1, Alive), EndLine, Run(3, Alive), EndBlock]
     );
+    //assert_parse!(b" 12b " => rle_line, vec![Run(12, Dead)]);
 }
 
 #[test]
