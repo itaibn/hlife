@@ -26,7 +26,7 @@ impl<'a> Hashlife<'a> {
 fn test_block_from_bytes() {
     use evolve::Hashlife;
 
-    Hashlife::with_hashlife(|mut hl| {
+    Hashlife::with_new(|mut hl| {
         assert!(hl.block_from_bytes(b"bbo$boo$bbo!").is_some());
     });
 }

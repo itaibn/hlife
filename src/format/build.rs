@@ -116,7 +116,7 @@ mod test {
             EndBlock];
         let tokens2 = vec![EndBlock];
 
-        CABlockCache::with_block_cache(|mut cache| {
+        CABlockCache::with_new(|mut cache| {
             assert_eq!(cache.block_from_rle(&tokens0), Block::Leaf(0x12));
             let node = cache.new_block([[Block::Leaf(0x03), Block::Leaf(0x01)],
                 [Block::Leaf(0x01), Block::Leaf(0x00)]]);

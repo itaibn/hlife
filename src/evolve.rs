@@ -35,9 +35,9 @@ fn mk_small_evolve_cache() -> [u8; 1<<16] {
 }
 
 impl<'a> Hashlife<'a> {
-    pub fn with_hashlife<F,T>(f: F) -> T
+    pub fn with_new<F,T>(f: F) -> T
         where F: for<'b> FnOnce(Hashlife<'b>) -> T {
-        CABlockCache::with_block_cache(|bcache| {
+        CABlockCache::with_new(|bcache| {
             //let placeholder_node = bcache.new_block([[Block::Leaf(0); 2]; 2]);
             let hashlife = Hashlife {
                 table: bcache,
@@ -190,7 +190,7 @@ mod test {
             b"o$b2o$o$o!"
         ];
 
-        Hashlife::with_hashlife(|mut hl| {
+        Hashlife::with_new(|mut hl| {
             for (input_rle, output_rle) in input_rles.iter()
                                                      .zip(output_rles.iter()) {
                 print!("Testing:\n{}\n->\n{}\n",

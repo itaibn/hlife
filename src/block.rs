@@ -24,7 +24,7 @@ use std::hash::{Hash, Hasher, SipHasher};
 pub struct CABlockCache<'a> (HashMap<u64, Box<HeapNode<'a>>>);
 
 impl<'a> CABlockCache<'a> {
-    pub fn with_block_cache<F, T>(f: F) -> T
+    pub fn with_new<F, T>(f: F) -> T
         where F: for<'b> FnOnce(CABlockCache<'b>) -> T {
 
         let ca_block_cache = CABlockCache(HashMap::new());
