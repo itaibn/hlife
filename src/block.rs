@@ -1,3 +1,5 @@
+//! Low-level code for the creation and handling of blocks
+
 use cache::Cache;
 
 use std::collections::HashMap;
@@ -20,10 +22,26 @@ use std::hash::{Hash, Hasher, SipHasher};
 // recursively). Since Block<'a> includes cache data with references to
 // other blocks and interior mutability, it is invariant in 'a.
 
-// A hashtable with all the blocks used for a Hashlife computation.
+/// A hashtable with all the block nodes used for a Hashlife computation.
+/// Lifetime parameter indicates the lifetime of all the blocks stored therein;
+/// Note that all the blocks are owned are owned by `CABlockCache`; the nodes
+/// themselves only contain references to one another (with lifetime 'a).
 pub struct CABlockCache<'a> (HashMap<u64, Box<HeapNode<'a>>>);
 
 impl<'a> CABlockCache<'a> {
+    /// Create a new `CABlockCache` and pass it to `f`.
+    /// This indirect initialization approach is necessary since the
+    /// CABlockCache needs to outlive its own lifetime parameter, and a simple
+    /// `new` method cannot specify this lifetime constraint. This API winds up
+    /// very similar to using "generativity" -- indeed, a side effect of this
+    /// implementation is that each node is uniquely associated at the
+    /// type-level to the block cache that owns it, and it is impossible for a
+    /// node owned by one cache to link to nodes owned by another cache.
+    /// However, this is not a fundamental nor necessary feature of the design
+    /// -- for instance, there is nothing unsafe about implementing a
+    /// `with_two_new` method that generates two `CABlockCache`s with the same
+    /// lifetime parameter, and with such a method it is possible (though
+    /// probably a bad idea) to mix nodes owned by by block caches.
     pub fn with_new<F, T>(f: F) -> T
         where F: for<'b> FnOnce(CABlockCache<'b>) -> T {
 
@@ -31,11 +49,21 @@ impl<'a> CABlockCache<'a> {
         f(ca_block_cache)
     }
 
+    /// Return a reference to a node with `elems` as corners, creating this node
+    /// if it did not already exist.
     pub fn new_block(&mut self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
         let hash = hash(&elems);
         let blockref: &HeapNode<'a> = &**self.0.entry(hash).or_insert_with(||
             Box::new(HeapNode::from_elems_and_hash(elems, hash)));
         assert!(blockref.content == elems, "Hash collision");
+        // The only unsafe line in this crate! Extend the lifetime of blockref
+        // to 'a. This is why the hashmap needs to store all the nodes in boxes:
+        // If it stored the nodes directly, the reference to them would be
+        // invalidated whenever the hashtable is resized. When storing boxes,
+        // the references to them live as long as the boxes themselves. Notice
+        // that the interface of `CABlockCache` does not allow removing entries
+        // from the underlying hashmap, this box will live as long as the
+        // underlying hashmap, so extending the lifetime to 'a is safe.
         unsafe {&*(blockref as *const _)}
     }
 }
