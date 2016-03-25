@@ -3,7 +3,12 @@
 use std::ops::Range;
 
 use block::{CABlockCache, Block, Leaf, LEAF_SIZE};
-use super::parse::{RLEToken, State};
+use super::parse::{RLE, RLEEncode, RLEToken, State};
+
+fn expand_rle<A:Clone>(rle: &[(usize, A)]) -> Vec<A> {
+    use std::iter;
+    rle.iter().flat_map(|&(n, ref t)| iter::repeat(t.clone()).take(n)).collect()
+}
 
 fn tokens_to_matrix(tokens: &[RLEToken]) -> Vec<Vec<State>> {
     let mut matrix = Vec::new();
@@ -11,11 +16,8 @@ fn tokens_to_matrix(tokens: &[RLEToken]) -> Vec<Vec<State>> {
 
     for token in tokens {
         match *token {
-            RLEToken::Run(length, state) => {
-                // Needs to be a separate statement to satisfy the borrow
-                // checker
-                let len = cur_line.len();
-                cur_line.resize(len + length, state);
+            RLEToken::State(state) => {
+                cur_line.push(state);
             }
             RLEToken::EndLine => {
                 matrix.push(cur_line);
@@ -32,10 +34,10 @@ fn tokens_to_matrix(tokens: &[RLEToken]) -> Vec<Vec<State>> {
 }
 
 impl<'a> CABlockCache<'a> {
-    pub fn block_from_rle(&mut self, rle: &[RLEToken]) -> Block<'a> {
+    pub fn block_from_rle(&mut self, rle: &RLE) -> Block<'a> {
         use std::cmp::max;
 
-        let mut matrix = tokens_to_matrix(rle);
+        let mut matrix = tokens_to_matrix(&expand_rle(rle));
         let max_row_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
         let max_side = max(max_row_len, matrix.len());
         let res_side: usize = max(max_side, LEAF_SIZE).next_power_of_two();
@@ -102,6 +104,16 @@ fn states_to_leaf(states: &[&[State]]) -> Leaf {
     | state_to_bit(states[1][1]) << 5
 }
 
+#[test]
+fn test_expand_rle() {
+    // Test with the look-and-say sequence
+    assert_eq!(expand_rle(&[(1, 1)]), vec![1]);
+    assert_eq!(expand_rle(&[(2, 1)]), vec![1, 1]);
+    assert_eq!(expand_rle(&[(1, 2), (1, 1)]), vec![2, 1]);
+    assert_eq!(expand_rle(&[(1, 1), (1, 2), (2, 1)]), vec![1, 2, 1, 1]);
+    assert_eq!(expand_rle(&[(3, 1), (2, 2), (1, 1)]), vec![1, 1, 1, 2, 2, 1]);
+}
+
 #[cfg(test)]
 mod test {
     #[test]
@@ -110,11 +122,15 @@ mod test {
         use format::parse::State::*;
         use block::{CABlockCache, Block};
 
-        let tokens0 = vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Alive),
-            EndBlock];
-        let tokens1 = vec![Run(3, Alive), EndLine, EndLine, Run(1, Alive),
-            EndBlock];
-        let tokens2 = vec![EndBlock];
+        //let tokens0 = vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Alive),
+        //    EndBlock];
+        let tokens0 = vec![(1, State(Dead)), (1, State(Alive)), (1, EndLine),
+            (1, State(Alive)), (1, EndBlock)];
+        //let tokens1 = vec![Run(3, Alive), EndLine, EndLine, Run(1, Alive),
+        //    EndBlock];
+        let tokens1 = vec![(3, State(Alive)), (1, EndLine), (1, EndLine), (1,
+            State(Alive)), (1, EndBlock)];
+        let tokens2 = vec![(1, EndBlock)];
 
         CABlockCache::with_new(|mut cache| {
             assert_eq!(cache.block_from_rle(&tokens0), Block::Leaf(0x12));

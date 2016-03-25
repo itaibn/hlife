@@ -29,20 +29,20 @@ named!(parse_line<&[u8], LineParse>,
 
 // Temp type before I figure out the output of the parser
 pub type ParseOut = RLEOut;
-pub type RLEOut = Vec<RLEToken>;
+pub type RLEOut = RLE;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum LineParse {
     Comment(Comment),
     RLEMeta(RLEMeta),
-    RLELine(Vec<RLEToken>),
+    RLELine(RLE),
 }
 
 // TODO: Return error instead of panicking.
 fn process_lines(lines: Vec<LineParse>) -> ParseOut {
     // For now, assume the format is RLE
     let mut cur_meta: Option<Option<RLEMeta>> = None;
-    let mut cur_tokens = Vec::new();
+    let mut cur_tokens: RLE = Vec::new();
 
     for line in lines {
         match line {
@@ -69,6 +69,9 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Comment;
 
+pub type RLE = RLEEncode<RLEToken>;
+pub type RLEEncode<A> = Vec<(usize, A)>;
+
 // TODO: Replace u64 by bignums
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct RLEMeta {
@@ -78,9 +81,9 @@ struct RLEMeta {
     //rule: ...
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum RLEToken {
-    Run(usize, State),
+    State(State),
     EndLine,
     EndBlock,
 }
@@ -147,14 +150,17 @@ fn rle_cell_state(input: &[u8]) -> IResult<&[u8], State> {
 
 named!(rle_token<&[u8], RLEToken>,
     alt!(
-        chain!(count: uint? ~ state: rle_cell_state,
-            || RLEToken::Run(count.unwrap_or(1) as usize, state))
+          map!(rle_cell_state, RLEToken::State)
         | map!(tag!("$"), |_| RLEToken::EndLine)
         | map!(tag!("!"), |_| RLEToken::EndBlock)
     )
 );
 
-named!(rle_line<&[u8], Vec<RLEToken> >, many0!(rle_token));
+named!(opt_num<&[u8], usize>,
+    map!(opt!(uint), |x: Option<u64>| x.unwrap_or(1) as usize)
+);
+
+named!(rle_line<&[u8], RLE>, many0!(tuple!(opt_num, rle_token)));
 
 #[test]
 fn test_rle_line() {
@@ -162,9 +168,14 @@ fn test_rle_line() {
     use self::State::*;
 
     assert_parse!(b"bo$bbo$3o!" => rle_line,
-        vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Dead), Run(1, Dead),
-            Run(1, Alive), EndLine, Run(3, Alive), EndBlock]
+//        vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Dead), Run(1, Dead),
+//            Run(1, Alive), EndLine, Run(3, Alive), EndBlock]
+        vec![(1, State(Dead)), (1, State(Alive)), (1, EndLine), (1,
+            State(Dead)), (1, State(Dead)), (1, State(Alive)), (1, EndLine), (3,
+            State(Alive)), (1, EndBlock)]
     );
+    assert_parse!(b"o2$o" => rle_line, vec![(1, State(Alive)), (2, EndLine), (1,
+        State(Alive))]);
     //assert_parse!(b" 12b " => rle_line, vec![Run(12, Dead)]);
 }
 
@@ -200,8 +211,11 @@ fn test_parse_line() {
     assert_parse!(b"x=1,y=1,rule=B3/S23\n" => parse_line,
         LineParse::RLEMeta(RLEMeta {x: 1, y: 1}));
     assert_parse!(b"3bo\n" => parse_line, 
-        LineParse::RLELine(vec![RLEToken::Run(3, State::Dead), RLEToken::Run(1,
-                                    State::Alive)]));
+//        LineParse::RLELine(vec![RLEToken::Run(3, State::Dead), RLEToken::Run(1,
+//                                    State::Alive)]));
+        LineParse::RLELine(vec![(3, RLEToken::State(State::Dead)), (1,
+            RLEToken::State(State::Alive))])
+    );
     assert_parse!(b" #  Comment!\n" => parse_line, LineParse::Comment(Comment));
 }
 
@@ -211,18 +225,20 @@ fn test_process_lines() {
     //use RLEToken::{Run, EndBlock, EndLine};
     use self::State::*;
     //use self::LineParse::*;
+    let alive = State(Alive);
+    let dead = State(Dead);
 
     let meta = LineParse::RLEMeta(RLEMeta {x: 5, y: 5});
-    let line0 = LineParse::RLELine(vec![Run(1, Alive), EndLine, Run(1, Alive)]);
-    let line1 = LineParse::RLELine(vec![Run(3, Dead), Run(1, Alive), EndBlock]);
+    let line0 = LineParse::RLELine(vec![(1, alive), (1, EndLine), (1, alive)]);
+    let line1 = LineParse::RLELine(vec![(3, dead), (1, alive), (1, EndBlock)]);
 
-    assert_eq!(process_lines(vec![line0.clone()]), vec![Run(1, Alive), EndLine,
-        Run(1, Alive)]);
+    assert_eq!(process_lines(vec![line0.clone()]), vec![(1, alive), (1, EndLine),
+        (1, alive)]);
     assert_eq!(process_lines(vec![meta.clone(), line0.clone()]),
-        vec![Run(1, Alive), EndLine, Run(1, Alive)]);
+        vec![(1, alive), (1, EndLine), (1, alive)]);
     assert_eq!(process_lines(vec![line0.clone(), line1.clone()]),
-        vec![Run(1, Alive), EndLine, Run(1, Alive), Run(3, Dead), Run(1, Alive),
-            EndBlock]);
+        vec![(1, alive), (1, EndLine), (1, alive), (3, dead), (1, alive), (1,
+            EndBlock)]);
     // Current implementation panics
     //assert_eq!(process_lines(vec![line0, meta], /* Failure */))
 }
@@ -233,6 +249,8 @@ fn test_parse_file() {
     use self::State::*;
 
     assert_parse!(b"x = 5, y = 5, rule = B3/S23\nobo$3bo!\n" => parse_file,
-        vec![Run(1, Alive), Run(1, Dead), Run(1, Alive), EndLine, Run(3, Dead),
-             Run(1, Alive), EndBlock]);
+//        vec![Run(1, Alive), Run(1, Dead), Run(1, Alive), EndLine, Run(3, Dead),
+//             Run(1, Alive), EndBlock]);
+        vec![(1, State(Alive)), (1, State(Dead)), (1, State(Alive)), (1,
+             EndLine), (3, State(Dead)), (1, State(Alive)), (1, EndBlock)]);
 }
