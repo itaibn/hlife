@@ -3,7 +3,7 @@
 use std::ops::Range;
 
 use block::{CABlockCache, Block, Leaf, LEAF_SIZE};
-use super::parse::{RLE, RLEEncode, RLEToken, State};
+use super::parse::{RLE, RLEToken, State};
 
 fn expand_rle<A:Clone>(rle: &[(usize, A)]) -> Vec<A> {
     use std::iter;
