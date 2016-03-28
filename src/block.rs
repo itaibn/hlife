@@ -133,4 +133,15 @@ impl<'a> Block<'a> {
             _ => panic!("unwrap_node: Not a node"),
         }
     }
+
+    // Will probably be moved
+    pub fn depth(&self) -> usize {
+        let mut count = 0;
+        let mut block: &Block = &self;
+        while let Block::Node(ref n) = *block {
+            block = &n.content[0][0];
+            count += 1;
+        }
+        count
+    }
 }

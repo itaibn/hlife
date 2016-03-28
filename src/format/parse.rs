@@ -62,6 +62,9 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
         }
     }
 
+    // debug
+    println!("{:?}", cur_tokens);
+
     // Turn tokens to output.
     cur_tokens
 }
@@ -253,4 +256,7 @@ fn test_parse_file() {
 //             Run(1, Alive), EndBlock]);
         vec![(1, State(Alive)), (1, State(Dead)), (1, State(Alive)), (1,
              EndLine), (3, State(Dead)), (1, State(Alive)), (1, EndBlock)]);
+    assert_parse!(b"x = 2, y = 2, rule = B3/S23\nbb$bb$!\n" => parse_file,
+        vec![(1, State(Dead)), (1, State(Dead)), (1, EndLine), (1, State(Dead)),
+            (1, State(Dead)), (1, EndLine), (1, EndBlock)]);
 }

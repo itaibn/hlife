@@ -1,5 +1,6 @@
 pub mod parse;
 pub mod build;
+pub mod write;
 
 use evolve::Hashlife;
 use block::Block;
@@ -24,9 +25,14 @@ impl<'a> Hashlife<'a> {
 // Test for parsing error found in ::evolve tests.
 #[test]
 fn test_block_from_bytes() {
+    use block::Block;
     use evolve::Hashlife;
 
     Hashlife::with_new(|mut hl| {
         assert!(hl.block_from_bytes(b"bbo$boo$bbo!").is_some());
+        // From failed examples in `self::write::test::test_build_round_trip`
+        assert_eq!(hl.block_from_bytes(b"$!"), Some(Block::Leaf(0)));
+        let longer_test = b"x = 2, y = 2, rule = B3/S23\nbb$bb!";
+        assert_eq!(hl.block_from_bytes(longer_test), Some(Block::Leaf(0)));
     });
 }

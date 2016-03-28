@@ -117,7 +117,7 @@ fn test_expand_rle() {
 #[cfg(test)]
 mod test {
     #[test]
-    fn build_leaf() {
+    fn test_build_examples() {
         use format::parse::RLEToken::*;
         use format::parse::State::*;
         use block::{CABlockCache, Block};
@@ -131,6 +131,9 @@ mod test {
         let tokens1 = vec![(3, State(Alive)), (1, EndLine), (1, EndLine), (1,
             State(Alive)), (1, EndBlock)];
         let tokens2 = vec![(1, EndBlock)];
+        // From failed format::write test
+        let tokens3 = vec![(1, State(Dead)), (1, State(Dead)), (1, EndLine),
+            (1, State(Dead)), (1, State(Dead)), (1, EndBlock)];
 
         CABlockCache::with_new(|mut cache| {
             assert_eq!(cache.block_from_rle(&tokens0), Block::Leaf(0x12));
@@ -138,6 +141,9 @@ mod test {
                 [Block::Leaf(0x01), Block::Leaf(0x00)]]);
             assert_eq!(cache.block_from_rle(&tokens1), Block::Node(node));
             assert_eq!(cache.block_from_rle(&tokens2), Block::Leaf(0x00));
+            assert_eq!(cache.block_from_rle(&vec![(1, EndLine), (1, EndBlock)]),
+                Block::Leaf(0x00));
+            assert_eq!(cache.block_from_rle(&tokens3), Block::Leaf(0x00));
         });
     }
 }
