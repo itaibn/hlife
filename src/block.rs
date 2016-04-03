@@ -121,16 +121,18 @@ fn hash<T: Hash>(t: &T) -> u64 {
 
 impl<'a> Block<'a> {
     pub fn unwrap_leaf(&self) -> Leaf {
-        match *self {
-            Block::Leaf(l) => l,
-            _ => panic!("unwrap_leaf: Not a leaf"),
+        if let Block::Leaf(l) = *self {
+            l
+        } else {
+            panic!("unwrap_leaf: Not a leaf");
         }
     }
 
     pub fn unwrap_node(&self) -> &Node<'a> {
-        match *self {
-            Block::Node(ref n) => &n,
-            _ => panic!("unwrap_node: Not a node"),
+        if let Block::Node(ref n) = *self {
+            &n
+        } else {
+            panic!("unwrap_node: Not a node");
         }
     }
 
