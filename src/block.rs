@@ -104,6 +104,10 @@ impl<'a> HeapNode<'a> {
             evolve: Cache::new(),
         }
     }
+
+    pub fn corners(&self) -> &[[Block<'a>; 2]; 2] {
+        &self.content
+    }
 }
 
 impl<'a> PartialEq for HeapNode<'a> {
