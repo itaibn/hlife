@@ -95,11 +95,11 @@ impl<'a> Hashlife<'a> {
                         section[x][y] = parts[i+x][j+y];
                     }
                 }
-                let subpart = self.table.new_block(section);
+                let subpart = self.table.node(section);
                 res_components[i][j] = self.evolve(subpart);
             }
         }
-        Block::Node(self.table.new_block(res_components))
+        Block::Node(self.table.node(res_components))
     }
 
     fn subblock(&mut self, node: Node<'a>, x: u8, y: u8) -> Block<'a>
@@ -128,7 +128,7 @@ impl<'a> Hashlife<'a> {
                     .unwrap_node().corners()[xx&1][yy&1];
             }
         }
-        Block::Node(self.table.new_block(components))
+        Block::Node(self.table.node(components))
     }
 
     fn subblock_leaf(&mut self, node: Node<'a>, x: usize, y: usize) -> Block<'a>

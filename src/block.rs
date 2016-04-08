@@ -51,7 +51,7 @@ impl<'a> CABlockCache<'a> {
 
     /// Return a reference to a node with `elems` as corners, creating this node
     /// if it did not already exist.
-    pub fn new_block(&mut self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
+    pub fn node(&mut self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
         let hash = hash(&elems);
         let blockref: &HeapNode<'a> = &**self.0.entry(hash).or_insert_with(||
             Box::new(HeapNode::from_elems_and_hash(elems, hash)));

@@ -130,7 +130,7 @@ mod test {
             let b0 = Block::Leaf(0x03);
             assert_eq!(format_rle(&b0),
                 "x = 2, y = 2, rule = B3/S23\noo$bb!\n");
-            let b1 = Block::Node(bc.new_block([[b0, b0], [b0, b0]]));
+            let b1 = Block::Node(bc.node([[b0, b0], [b0, b0]]));
             assert_eq!(format_rle(&b1),
                 "x = 4, y = 4, rule = B3/S23\noooo$bbbb$oooo$bbbb!\n");
         });

@@ -76,7 +76,7 @@ impl<'a> CABlockCache<'a> {
                         submatrix);
                 }
             }
-            Block::Node(self.new_block(subblocks))
+            Block::Node(self.node(subblocks))
         }
     }
 }
@@ -137,7 +137,7 @@ mod test {
 
         CABlockCache::with_new(|mut cache| {
             assert_eq!(cache.block_from_rle(&tokens0), Block::Leaf(0x12));
-            let node = cache.new_block([[Block::Leaf(0x03), Block::Leaf(0x01)],
+            let node = cache.node([[Block::Leaf(0x03), Block::Leaf(0x01)],
                 [Block::Leaf(0x01), Block::Leaf(0x00)]]);
             assert_eq!(cache.block_from_rle(&tokens1), Block::Node(node));
             assert_eq!(cache.block_from_rle(&tokens2), Block::Leaf(0x00));
