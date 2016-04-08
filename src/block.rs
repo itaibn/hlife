@@ -80,7 +80,7 @@ impl<'a> Drop for CABlockCache<'a> {
 // Note: uncertain if default implementation of Debug is right
 #[derive(Debug)]
 pub struct HeapNode<'a> {
-    pub content: [[Block<'a>; 2]; 2],
+    content: [[Block<'a>; 2]; 2],
     hash: u64,
     pub evolve: Cache<Block<'a>>,
 }
