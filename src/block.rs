@@ -82,7 +82,7 @@ impl<'a> Drop for CABlockCache<'a> {
 pub struct HeapNode<'a> {
     corners: [[Block<'a>; 2]; 2],
     hash: u64,
-    pub evolve: Cache<Block<'a>>,
+    evolve: Cache<Block<'a>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -107,6 +107,10 @@ impl<'a> HeapNode<'a> {
 
     pub fn corners(&self) -> &[[Block<'a>; 2]; 2] {
         &self.corners
+    }
+
+    pub fn evolve_cache(&self) -> &Cache<Block<'a>> {
+        &self.evolve
     }
 }
 

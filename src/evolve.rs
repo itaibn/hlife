@@ -55,7 +55,7 @@ impl<'a> Hashlife<'a> {
     pub fn evolve(&mut self, node: Node<'a>) -> Block<'a> {
         let elem = node.corners();
 
-        node.evolve.eval(move ||
+        node.evolve_cache().eval(move ||
             match elem[0][0] {
                 Block::Leaf(a00) => {
                     let a01 = elem[0][1].unwrap_leaf();
