@@ -55,7 +55,7 @@ impl<'a> CABlockCache<'a> {
         let hash = hash(&elems);
         let blockref: &HeapNode<'a> = &**self.0.entry(hash).or_insert_with(||
             Box::new(HeapNode::from_elems_and_hash(elems, hash)));
-        assert!(blockref.content == elems, "Hash collision");
+        assert!(blockref.corners == elems, "Hash collision");
         // The only unsafe line in this crate! Extend the lifetime of blockref
         // to 'a. This is why the hashmap needs to store all the nodes in boxes:
         // If it stored the nodes directly, the reference to them would be
@@ -72,7 +72,7 @@ impl<'a> CABlockCache<'a> {
 impl<'a> Drop for CABlockCache<'a> {
     fn drop(&mut self) {
         for (_, block) in &mut self.0 {
-            block.content = [[Block::Leaf(0); 2]; 2];
+            block.corners = [[Block::Leaf(0); 2]; 2];
         }
     }
 }
@@ -80,7 +80,7 @@ impl<'a> Drop for CABlockCache<'a> {
 // Note: uncertain if default implementation of Debug is right
 #[derive(Debug)]
 pub struct HeapNode<'a> {
-    content: [[Block<'a>; 2]; 2],
+    corners: [[Block<'a>; 2]; 2],
     hash: u64,
     pub evolve: Cache<Block<'a>>,
 }
@@ -99,14 +99,14 @@ pub const LEAF_SIZE: usize = 2;
 impl<'a> HeapNode<'a> {
     fn from_elems_and_hash(elems: [[Block; 2]; 2], hash: u64) -> HeapNode {
         HeapNode {
-            content: elems,
+            corners: elems,
             hash: hash,
             evolve: Cache::new(),
         }
     }
 
     pub fn corners(&self) -> &[[Block<'a>; 2]; 2] {
-        &self.content
+        &self.corners
     }
 }
 
@@ -154,7 +154,7 @@ impl<'a> Block<'a> {
         let mut count = 0;
         let mut block: &Block = &self;
         while let Block::Node(ref n) = *block {
-            block = &n.content[0][0];
+            block = &n.corners[0][0];
             count += 1;
         }
         count
