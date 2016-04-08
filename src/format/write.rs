@@ -10,12 +10,15 @@ fn block_to_matrix(block: &Block) -> Vec<Vec<State>> {
     match *block {
         Block::Leaf(l) => leaf_to_matrix(l).iter().map(|row|
             row.to_vec()).collect(),
-        Block::Node(ref n) => merge_rows(
-            merge_columns(block_to_matrix(&n.content[0][0]),
-                          block_to_matrix(&n.content[0][1])),
-            merge_columns(block_to_matrix(&n.content[1][0]),
-                          block_to_matrix(&n.content[1][1]))
-        )
+        Block::Node(ref n) => {
+            let corners = n.corners();
+            merge_rows(
+                merge_columns(block_to_matrix(&corners[0][0]),
+                              block_to_matrix(&corners[0][1])),
+                merge_columns(block_to_matrix(&corners[1][0]),
+                              block_to_matrix(&corners[1][1]))
+            )
+        }
     }
 }
 

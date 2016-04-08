@@ -53,7 +53,7 @@ impl<'a> Hashlife<'a> {
     }
 
     pub fn evolve(&mut self, node: Node<'a>) -> Block<'a> {
-        let elem = node.content;
+        let elem = node.corners();
 
         node.evolve.eval(move ||
             match elem[0][0] {
@@ -106,11 +106,10 @@ impl<'a> Hashlife<'a> {
     {
         let (x, y) = (x as usize, y as usize);
 
-        //let node = block.content.unwrap_node();
         if (x|y)&1 == 0 {
-            node.content[x/2][y/2]
+            node.corners()[x/2][y/2]
         } else {
-            match node.content[0][0] {
+            match node.corners()[0][0] {
                 Block::Leaf(_) => self.subblock_leaf(node, x, y),
                 Block::Node(_) => self.subblock_node(node, x, y),
             }
@@ -125,8 +124,8 @@ impl<'a> Hashlife<'a> {
             for j in 0..2 {
                 let xx = i+x;
                 let yy = j+y;
-                components[i][j] = node.content[xx/2][yy/2]
-                    .unwrap_node().content[xx&1][yy&1];
+                components[i][j] = node.corners()[xx/2][yy/2]
+                    .unwrap_node().corners()[xx&1][yy&1];
             }
         }
         Block::Node(self.table.new_block(components))
@@ -139,7 +138,7 @@ impl<'a> Hashlife<'a> {
             for j in 0..2 {
                 let xx = i+x;
                 let yy = j+y;
-                let cell = 1 & (node.content[xx/2][yy/2].unwrap_leaf()
+                let cell = 1 & (node.corners()[xx/2][yy/2].unwrap_leaf()
                     >> ((xx&2) + 4*(yy&2)));
                 output_leaf |= cell << (i + 4*j);
             }
