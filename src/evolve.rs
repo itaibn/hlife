@@ -162,7 +162,8 @@ impl<'a> Hashlife<'a> {
             self.blank_cache[depth]
         } else {
             let mut big_blank = *self.blank_cache.last().unwrap();
-            for _ in self.blank_cache.len()..depth {
+            let repeats = depth + 1 - self.blank_cache.len();
+            for _ in 0..repeats {
                 big_blank = Block::Node(self.table.node([[big_blank; 2]; 2]));
                 self.blank_cache.push(big_blank);
             }
