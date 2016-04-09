@@ -4,6 +4,7 @@ use block::CABlockCache;
 pub struct Hashlife<'a> {
     table: CABlockCache<'a>,
     small_evolve_cache: [u8; 1<<16],
+    blank_cache: Vec<Block<'a>>
     //placeholder_node: Node<'a>,
 }
 
@@ -42,6 +43,7 @@ impl<'a> Hashlife<'a> {
             let hashlife = Hashlife {
                 table: bcache,
                 small_evolve_cache: mk_small_evolve_cache(),
+                blank_cache: vec![Block::Leaf(0)],
                 //placeholder_node: placeholder_node,
             };
             f(hashlife)
@@ -154,11 +156,25 @@ impl<'a> Hashlife<'a> {
             + ((leafs[1][1] as usize) << 10);
         self.small_evolve_cache[entry]
     }
+
+    pub fn blank(&mut self, depth: usize) -> Block<'a> {
+        if depth < self.blank_cache.len() {
+            self.blank_cache[depth]
+        } else {
+            let mut big_blank = *self.blank_cache.last().unwrap();
+            for _ in self.blank_cache.len()..depth {
+                big_blank = Block::Node(self.table.node([[big_blank; 2]; 2]));
+                self.blank_cache.push(big_blank);
+            }
+            big_blank
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::{mk_small_evolve_cache, Hashlife};
+    use block::Block;
 
     #[test]
     fn test_small_evolve_cache() {
@@ -204,6 +220,28 @@ mod test {
 
                 assert_eq!(hl.evolve(input.unwrap_node()), output)
             }
+        });
+    }
+
+    #[test]
+    fn test_blank0() {
+        Hashlife::with_new(|mut hl| {
+            let blank2 = hl.blank(2);
+            assert_eq!(blank2.depth(), 2);
+            let blank0 = hl.blank(0);
+            assert_eq!(blank0, Block::Leaf(0));
+            let blank1 = hl.blank(1);
+            assert_eq!(blank2.unwrap_node().corners(), &[[blank1; 2]; 2]);
+            assert_eq!(blank1.unwrap_node().corners(), &[[blank0; 2]; 2]);
+        });
+    }
+
+    #[test]
+    fn test_blank1() {
+        Hashlife::with_new(|mut hl| {
+            assert_eq!(hl.blank(0), Block::Leaf(0));
+            assert_eq!(hl.blank(1).depth(), 1);
+            assert_eq!(hl.blank(2).depth(), 2);
         });
     }
 }
