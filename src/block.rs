@@ -164,3 +164,23 @@ impl<'a> Block<'a> {
         count
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::{CABlockCache, Block};
+
+    #[test]
+    fn test_depth() {
+        CABlockCache::with_new(|mut bc| {
+            let leaf = Block::Leaf(0x03);
+            assert_eq!(leaf.depth(), 0);
+            let n = bc.node([[leaf, leaf], [Block::Leaf(0x10), leaf]]);
+            let mut block = Block::Node(n);
+            assert_eq!(block.depth(), 1);
+            for i in 2..10 {
+                block = Block::Node(bc.node([[block; 2]; 2]));
+                assert_eq!(block.depth(), i);
+            }
+        });
+    }
+}
