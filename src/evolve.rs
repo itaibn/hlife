@@ -50,6 +50,10 @@ impl<'a> Hashlife<'a> {
         })
     }
 
+    pub fn node(&mut self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
+        self.block_cache().node(elems)
+    }
+
     pub fn block_cache(&mut self) -> &mut CABlockCache<'a> {
         &mut self.table
     }
@@ -97,11 +101,11 @@ impl<'a> Hashlife<'a> {
                         section[x][y] = parts[i+x][j+y];
                     }
                 }
-                let subpart = self.table.node(section);
+                let subpart = self.node(section);
                 res_components[i][j] = self.evolve(subpart);
             }
         }
-        Block::Node(self.table.node(res_components))
+        Block::Node(self.node(res_components))
     }
 
     fn subblock(&mut self, node: Node<'a>, x: u8, y: u8) -> Block<'a>
@@ -130,7 +134,7 @@ impl<'a> Hashlife<'a> {
                     .unwrap_node().corners()[xx&1][yy&1];
             }
         }
-        Block::Node(self.table.node(components))
+        Block::Node(self.node(components))
     }
 
     fn subblock_leaf(&mut self, node: Node<'a>, x: usize, y: usize) -> Block<'a>
@@ -164,7 +168,7 @@ impl<'a> Hashlife<'a> {
             let mut big_blank = *self.blank_cache.last().unwrap();
             let repeats = depth + 1 - self.blank_cache.len();
             for _ in 0..repeats {
-                big_blank = Block::Node(self.table.node([[big_blank; 2]; 2]));
+                big_blank = Block::Node(self.node([[big_blank; 2]; 2]));
                 self.blank_cache.push(big_blank);
             }
             big_blank
