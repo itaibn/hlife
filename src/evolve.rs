@@ -6,7 +6,7 @@ use block::CABlockCache;
 pub struct Hashlife<'a> {
     table: RefCell<CABlockCache<'a>>,
     small_evolve_cache: [u8; 1<<16],
-    blank_cache: Vec<Block<'a>>
+    blank_cache: RefCell<Vec<Block<'a>>>,
     //placeholder_node: Node<'a>,
 }
 
@@ -45,7 +45,7 @@ impl<'a> Hashlife<'a> {
             let hashlife = Hashlife {
                 table: RefCell::new(bcache),
                 small_evolve_cache: mk_small_evolve_cache(),
-                blank_cache: vec![Block::Leaf(0)],
+                blank_cache: RefCell::new(vec![Block::Leaf(0)]),
                 //placeholder_node: placeholder_node,
             };
             f(hashlife)
@@ -163,15 +163,17 @@ impl<'a> Hashlife<'a> {
         self.small_evolve_cache[entry]
     }
 
-    pub fn blank(&mut self, depth: usize) -> Block<'a> {
-        if depth < self.blank_cache.len() {
-            self.blank_cache[depth]
+    pub fn blank(&self, depth: usize) -> Block<'a> {
+        let mut blank_cache = self.blank_cache.borrow_mut();
+
+        if depth < blank_cache.len() {
+            blank_cache[depth]
         } else {
-            let mut big_blank = *self.blank_cache.last().unwrap();
-            let repeats = depth + 1 - self.blank_cache.len();
+            let mut big_blank = *blank_cache.last().unwrap();
+            let repeats = depth + 1 - blank_cache.len();
             for _ in 0..repeats {
                 big_blank = Block::Node(self.node([[big_blank; 2]; 2]));
-                self.blank_cache.push(big_blank);
+                blank_cache.push(big_blank);
             }
             big_blank
         }
@@ -232,7 +234,7 @@ mod test {
 
     #[test]
     fn test_blank0() {
-        Hashlife::with_new(|mut hl| {
+        Hashlife::with_new(|hl| {
             let blank2 = hl.blank(2);
             assert_eq!(blank2.depth(), 2);
             let blank0 = hl.blank(0);
@@ -245,7 +247,7 @@ mod test {
 
     #[test]
     fn test_blank1() {
-        Hashlife::with_new(|mut hl| {
+        Hashlife::with_new(|hl| {
             assert_eq!(hl.blank(0), Block::Leaf(0));
             assert_eq!(hl.blank(1).depth(), 1);
             assert_eq!(hl.blank(2).depth(), 2);
