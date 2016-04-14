@@ -1,8 +1,10 @@
+use std::cell::{RefCell, RefMut};
+
 pub use block::{Block, Node, Leaf};
 use block::CABlockCache;
 
 pub struct Hashlife<'a> {
-    table: CABlockCache<'a>,
+    table: RefCell<CABlockCache<'a>>,
     small_evolve_cache: [u8; 1<<16],
     blank_cache: Vec<Block<'a>>
     //placeholder_node: Node<'a>,
@@ -41,7 +43,7 @@ impl<'a> Hashlife<'a> {
         CABlockCache::with_new(|bcache| {
             //let placeholder_node = bcache.new_block([[Block::Leaf(0); 2]; 2]);
             let hashlife = Hashlife {
-                table: bcache,
+                table: RefCell::new(bcache),
                 small_evolve_cache: mk_small_evolve_cache(),
                 blank_cache: vec![Block::Leaf(0)],
                 //placeholder_node: placeholder_node,
@@ -54,8 +56,8 @@ impl<'a> Hashlife<'a> {
         self.block_cache().node(elems)
     }
 
-    pub fn block_cache(&mut self) -> &mut CABlockCache<'a> {
-        &mut self.table
+    pub fn block_cache(&mut self) -> RefMut<CABlockCache<'a>> {
+        self.table.borrow_mut()
     }
 
     pub fn evolve(&mut self, node: Node<'a>) -> Block<'a> {
