@@ -52,15 +52,15 @@ impl<'a> Hashlife<'a> {
         })
     }
 
-    pub fn node(&mut self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
+    pub fn node(&self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
         self.block_cache().node(elems)
     }
 
-    pub fn block_cache(&mut self) -> RefMut<CABlockCache<'a>> {
+    pub fn block_cache(&self) -> RefMut<CABlockCache<'a>> {
         self.table.borrow_mut()
     }
 
-    pub fn evolve(&mut self, node: Node<'a>) -> Block<'a> {
+    pub fn evolve(&self, node: Node<'a>) -> Block<'a> {
         let elem = node.corners();
 
         node.evolve_cache().eval(move ||
@@ -92,7 +92,7 @@ impl<'a> Hashlife<'a> {
         )
     }
 
-    fn evolve_finish(&mut self, parts: [[Block<'a>; 3]; 3]) -> Block<'a>
+    fn evolve_finish(&self, parts: [[Block<'a>; 3]; 3]) -> Block<'a>
     {
         let mut res_components = [[parts[0][0]; 2]; 2];
         for i in 0..2 {
@@ -110,7 +110,7 @@ impl<'a> Hashlife<'a> {
         Block::Node(self.node(res_components))
     }
 
-    fn subblock(&mut self, node: Node<'a>, x: u8, y: u8) -> Block<'a>
+    fn subblock(&self, node: Node<'a>, x: u8, y: u8) -> Block<'a>
     {
         let (x, y) = (x as usize, y as usize);
 
@@ -124,7 +124,7 @@ impl<'a> Hashlife<'a> {
         }
     }
 
-    fn subblock_node(&mut self, node: Node<'a>, x: usize, y: usize) -> Block<'a>
+    fn subblock_node(&self, node: Node<'a>, x: usize, y: usize) -> Block<'a>
     {
         //let (x, y) = (x as usize, y as usize);
         let mut components = [[Block::Node(node); 2]; 2];
@@ -139,7 +139,7 @@ impl<'a> Hashlife<'a> {
         Block::Node(self.node(components))
     }
 
-    fn subblock_leaf(&mut self, node: Node<'a>, x: usize, y: usize) -> Block<'a>
+    fn subblock_leaf(&self, node: Node<'a>, x: usize, y: usize) -> Block<'a>
     {
         let mut output_leaf = 0;
         for i in 0..2 {

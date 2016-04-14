@@ -125,7 +125,7 @@ mod test {
     fn test_instances() {
         use block::Block;
 
-        Hashlife::with_new(|mut hl| {
+        Hashlife::with_new(|hl| {
             let mut bc = hl.block_cache();
             let b0 = Block::Leaf(0x03);
             assert_eq!(format_rle(&b0),
