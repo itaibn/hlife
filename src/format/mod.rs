@@ -8,6 +8,7 @@ use block::Block;
 impl<'a> Hashlife<'a> {
     pub fn block_from_bytes(&mut self, bytes: &[u8]) -> Option<Block<'a>> {
         use self::parse::parse_file;
+        use self::build::block_from_rle;
         use nom::IResult;
 
         // TODO: Do this with less copying.
@@ -15,7 +16,7 @@ impl<'a> Hashlife<'a> {
         with_newline.push(b'\n');
 
         if let IResult::Done(_, tokens) = parse_file(&with_newline) {
-            Some(self.block_cache().block_from_rle(&tokens))
+            Some(block_from_rle(&self, &tokens))
         } else {
             None
         }

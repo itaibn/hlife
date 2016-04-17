@@ -2,7 +2,7 @@
 
 use std::ops::Range;
 
-use block::{CABlockCache, Block, Leaf, LEAF_SIZE};
+use evolve::{Hashlife, Block, Leaf, LEAF_SIZE};
 use super::parse::{RLE, RLEToken, State};
 
 fn expand_rle<A:Clone>(rle: &[(usize, A)]) -> Vec<A> {
@@ -33,51 +33,49 @@ fn tokens_to_matrix(tokens: &[RLEToken]) -> Vec<Vec<State>> {
     panic!("RLE with no end.")
 }
 
-impl<'a> CABlockCache<'a> {
-    pub fn block_from_rle(&mut self, rle: &RLE) -> Block<'a> {
-        use std::cmp::max;
+pub fn block_from_rle<'a>(hl: &Hashlife<'a>, rle: &RLE) -> Block<'a> {
+    use std::cmp::max;
 
-        let mut matrix = tokens_to_matrix(&expand_rle(rle));
-        let max_row_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
-        let max_side = max(max_row_len, matrix.len());
-        let res_side: usize = max(max_side, LEAF_SIZE).next_power_of_two();
-        let res_depth = (res_side / LEAF_SIZE).trailing_zeros();
+    let mut matrix = tokens_to_matrix(&expand_rle(rle));
+    let max_row_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
+    let max_side = max(max_row_len, matrix.len());
+    let res_side: usize = max(max_side, LEAF_SIZE).next_power_of_two();
+    let res_depth = (res_side / LEAF_SIZE).trailing_zeros();
 
-        for row in &mut matrix {
-            row.resize(res_side, State::Dead);
-        }
-
-        let empty_row = vec![State::Dead; res_side];
-        matrix.resize(res_side, empty_row);
-
-        let matrix = matrix.iter().map(|row| &**row).collect();
-        //println!("depth {}", res_depth);
-        self.block_from_matrix(res_depth, matrix)
+    for row in &mut matrix {
+        row.resize(res_side, State::Dead);
     }
 
-    fn block_from_matrix(&mut self, depth: u32, matrix: Vec<&[State]>) ->
-        Block<'a> {
+    let empty_row = vec![State::Dead; res_side];
+    matrix.resize(res_side, empty_row);
 
-        assert_eq!(matrix.len(), LEAF_SIZE << depth);
-        for row in &matrix {assert_eq!(row.len(), LEAF_SIZE << depth);}
+    let matrix = matrix.iter().map(|row| &**row).collect();
+    //println!("depth {}", res_depth);
+    block_from_matrix(hl, res_depth, matrix)
+}
 
-        if depth == 0 {
-            Block::Leaf(states_to_leaf(&matrix))
-        } else {
-            let mut subblocks = [[Block::Leaf(0); 2]; 2];
-            // Side-length of subblock.
-            let slen = LEAF_SIZE << (depth - 1);
-            for i in 0..2 {
-                for j in 0..2 {
-                    let submatrix = submatrix(&matrix,
-                                              i*slen..(i+1)*slen,
-                                              j*slen..(j+1)*slen);
-                    subblocks[i][j] = self.block_from_matrix(depth-1,
-                        submatrix);
-                }
+fn block_from_matrix<'a>(hl: &Hashlife<'a>, depth: u32, matrix: Vec<&[State]>)
+    -> Block<'a> {
+
+    assert_eq!(matrix.len(), LEAF_SIZE << depth);
+    for row in &matrix {assert_eq!(row.len(), LEAF_SIZE << depth);}
+
+    if depth == 0 {
+        Block::Leaf(states_to_leaf(&matrix))
+    } else {
+        let mut subblocks = [[Block::Leaf(0); 2]; 2];
+        // Side-length of subblock.
+        let slen = LEAF_SIZE << (depth - 1);
+        for i in 0..2 {
+            for j in 0..2 {
+                let submatrix = submatrix(&matrix,
+                                          i*slen..(i+1)*slen,
+                                          j*slen..(j+1)*slen);
+                subblocks[i][j] = block_from_matrix(hl, depth-1,
+                    submatrix);
             }
-            Block::Node(self.node(subblocks))
         }
+        Block::Node(hl.node(subblocks))
     }
 }
 
@@ -116,11 +114,13 @@ fn test_expand_rle() {
 
 #[cfg(test)]
 mod test {
+    use super::block_from_rle;
+
     #[test]
     fn test_build_examples() {
         use format::parse::RLEToken::*;
         use format::parse::State::*;
-        use block::{CABlockCache, Block};
+        use evolve::{Hashlife, Block};
 
         //let tokens0 = vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Alive),
         //    EndBlock];
@@ -135,15 +135,15 @@ mod test {
         let tokens3 = vec![(1, State(Dead)), (1, State(Dead)), (1, EndLine),
             (1, State(Dead)), (1, State(Dead)), (1, EndBlock)];
 
-        CABlockCache::with_new(|mut cache| {
-            assert_eq!(cache.block_from_rle(&tokens0), Block::Leaf(0x12));
-            let node = cache.node([[Block::Leaf(0x03), Block::Leaf(0x01)],
+        Hashlife::with_new(|hl| {
+            assert_eq!(block_from_rle(&hl, &tokens0), Block::Leaf(0x12));
+            let node = hl.node([[Block::Leaf(0x03), Block::Leaf(0x01)],
                 [Block::Leaf(0x01), Block::Leaf(0x00)]]);
-            assert_eq!(cache.block_from_rle(&tokens1), Block::Node(node));
-            assert_eq!(cache.block_from_rle(&tokens2), Block::Leaf(0x00));
-            assert_eq!(cache.block_from_rle(&vec![(1, EndLine), (1, EndBlock)]),
+            assert_eq!(block_from_rle(&hl, &tokens1), Block::Node(node));
+            assert_eq!(block_from_rle(&hl, &tokens2), Block::Leaf(0x00));
+            assert_eq!(block_from_rle(&hl, &vec![(1, EndLine), (1, EndBlock)]),
                 Block::Leaf(0x00));
-            assert_eq!(cache.block_from_rle(&tokens3), Block::Leaf(0x00));
+            assert_eq!(block_from_rle(&hl, &tokens3), Block::Leaf(0x00));
         });
     }
 }

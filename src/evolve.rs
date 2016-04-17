@@ -1,6 +1,6 @@
 use std::cell::{RefCell, RefMut};
 
-pub use block::{Block, Node, Leaf};
+pub use block::{Block, Node, Leaf, LEAF_SIZE};
 use block::CABlockCache;
 
 pub struct Hashlife<'a> {
