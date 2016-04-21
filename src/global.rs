@@ -132,10 +132,10 @@ mod test {
 
     #[test]
     fn test_blinker_1gen() {
-        Hashlife::with_new(|mut hl| {
-            let blinker_in = parse(&hl, b"3b!");
-            let blinker_out = parse(&hl, b"2ob$2ob$2ob2$!");
+        Hashlife::with_new(|hl| {
+            let mut blinker_in = parse(&hl, b"3b!");
             blinker_in.step(1);
+            let blinker_out = parse(&hl, b"2ob$2ob$2ob2$!");
             assert_eq!(blinker_in.block(), blinker_out.block());
         });
     }
