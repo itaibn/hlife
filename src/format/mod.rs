@@ -6,7 +6,7 @@ use evolve::Hashlife;
 use block::Block;
 
 impl<'a> Hashlife<'a> {
-    pub fn block_from_bytes(&mut self, bytes: &[u8]) -> Option<Block<'a>> {
+    pub fn block_from_bytes(&self, bytes: &[u8]) -> Option<Block<'a>> {
         use self::parse::parse_file;
         use self::build::block_from_rle;
         use nom::IResult;
@@ -29,7 +29,7 @@ fn test_block_from_bytes() {
     use block::Block;
     use evolve::Hashlife;
 
-    Hashlife::with_new(|mut hl| {
+    Hashlife::with_new(|hl| {
         assert!(hl.block_from_bytes(b"bbo$boo$bbo!").is_some());
         // From failed examples in `self::write::test::test_build_round_trip`
         assert_eq!(hl.block_from_bytes(b"$!"), Some(Block::Leaf(0)));

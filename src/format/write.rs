@@ -107,7 +107,7 @@ mod test {
     fn test_round_trip() {
         let tests: [&[u8]; 3] = [b"!\n", b"5bo!\n", b"2$o!\n"];
 
-        Hashlife::with_new(|mut hl| {
+        Hashlife::with_new(|hl| {
             for &test in &tests {
                 let block = hl.block_from_bytes(test).unwrap();
                 let reformatted = format_rle(&block);

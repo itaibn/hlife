@@ -214,7 +214,7 @@ mod test {
             b"o$b2o$o$o!"
         ];
 
-        Hashlife::with_new(|mut hl| {
+        Hashlife::with_new(|hl| {
             for (input_rle, output_rle) in input_rles.iter()
                                                      .zip(output_rles.iter()) {
                 print!("Testing:\n{}\n->\n{}\n",
