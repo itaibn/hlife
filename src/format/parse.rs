@@ -62,9 +62,6 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
         }
     }
 
-    // debug
-    println!("{:?}", cur_tokens);
-
     // Turn tokens to output.
     cur_tokens
 }
