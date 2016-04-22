@@ -3,6 +3,7 @@
 use cache::Cache;
 
 use std::collections::HashMap;
+use std::fmt;
 use std::hash::{Hash, Hasher, SipHasher};
 
 // [Currently these notes are out of date.]
@@ -85,7 +86,7 @@ pub struct HeapNode<'a> {
     evolve: Cache<Block<'a>>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Block<'a> {
     Node(Node<'a>),
     Leaf(Leaf),
@@ -163,6 +164,27 @@ impl<'a> Block<'a> {
         }
         count
     }
+
+    pub fn is_blank(&self) -> bool {
+        match *self {
+            Block::Leaf(ref l) => *l == 0,
+            Block::Node(ref n) => {
+                let c = n.corners();
+                let x = c[0][0];
+                c[0][1] == x && c[1][0] == x && c[1][1] == x
+                && x.is_blank()
+            }
+        }
+    }
+}
+
+impl<'a> fmt::Debug for Block<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use format::write::format_rle;
+        
+        let as_string = format_rle(&self);
+        write!(f, "{}", as_string)
+    }
 }
 
 #[cfg(test)]
@@ -180,6 +202,26 @@ mod test {
             for i in 2..10 {
                 block = Block::Node(bc.node([[block; 2]; 2]));
                 assert_eq!(block.depth(), i);
+            }
+        });
+    }
+
+    #[test]
+    fn test_blank() {
+        CABlockCache::with_new(|mut bc| {
+            let leaf0 = Block::Leaf(0);
+            let leaf1 = Block::Leaf(3);
+            assert!(leaf0.is_blank());
+            assert!(!leaf1.is_blank());
+            let node0 = Block::Node(bc.node([[leaf0, leaf0], [leaf0, leaf0]]));
+            assert!(node0.is_blank());
+            for i in 0..2 {
+                for j in 0..2 {
+                    let mut corners = [[leaf0; 2]; 2];
+                    corners[i][j] = leaf1;
+                    let nodes_1_to_4 = Block::Node(bc.node(corners));
+                    assert!(!nodes_1_to_4.is_blank());
+                }
             }
         });
     }
