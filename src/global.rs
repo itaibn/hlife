@@ -30,16 +30,51 @@ impl<'a, 'b> Pattern<'a, 'b> {
     fn step_pow2(&mut self, lognsteps: usize) {
         use std::usize;
 
-        let subdivide_depth = lognsteps + 1;
-        let blank = self.hl.blank(subdivide_depth);
-        let matrix = matrix(blank, self.block, subdivide_depth);
-        let evolve_matrix = matrix.iter()
-            .map(|row| row.iter().map(|entry|
-                self.hl.evolve(entry.unwrap_node())
-            ).collect::<Vec<_>>()
-            ).collect::<Vec<_>>();
+        let blank = self.hl.blank(lognsteps);
+        let matrix = matrix(blank, self.block, lognsteps);
+        let mut evolve_matrix = Vec::new();
+        for i in 0 .. matrix.len()-1 {
+            let mut evolve_row = Vec::new();
+            for j in 0 .. matrix.len()-1 {
+                let node_desc = [[matrix[i][j], matrix[i][j+1]],
+                                 [matrix[i+1][j], matrix[i+1][j+1]]];
+                evolve_row.push(self.hl.evolve(self.hl.node(node_desc)));
+            }
+            evolve_matrix.push(evolve_row);
+        }
+        print!("lognsteps: {}\nblank: {:?}\n", lognsteps, blank);
+        for row in &matrix {
+            println!("{:?}", &row);
+        }
+        println!("");
+        for row in &evolve_matrix {
+            println!("{:?}", &row);
+        }
         self.block = matrix_to_block(self.hl, usize::MAX, lognsteps,
             evolve_matrix);
+    }
+}
+
+impl<'a, 'b> Eq for Pattern<'a, 'b> { }
+
+impl<'a, 'b> PartialEq for Pattern<'a, 'b> {
+    fn eq(&self, other: &Self) -> bool {
+        use std::mem::swap;
+
+        let (mut a, mut b) = (self.block(), other.block());
+        if a.depth() > b.depth() {
+            swap(&mut a, &mut b);
+        }
+        while b.depth() > a.depth() {
+            let corners = b.unwrap_node().corners();
+            if !corners[0][1].is_blank()
+                || !corners[1][0].is_blank()
+                || !corners[1][1].is_blank() {
+                return false;
+            }
+            b = corners[0][0];
+        }
+        a == b
     }
 }
 
@@ -49,7 +84,7 @@ fn matrix<'a>(blank: Block<'a>, block: Block<'a>, depth: usize)
 
     use std::iter;
 
-    debug_assert!(blank.depth() == block.depth());
+    debug_assert!(blank.depth() <= block.depth());
 
     let len = 1 << (block.depth() - depth);
     let mut res = vec![vec![blank; len + 2]];
@@ -133,10 +168,14 @@ mod test {
     #[test]
     fn test_blinker_1gen() {
         Hashlife::with_new(|hl| {
-            let mut blinker_in = parse(&hl, b"3b!");
+            let mut blinker_in = parse(&hl, b"3o!");
             blinker_in.step(1);
-            let blinker_out = parse(&hl, b"2ob$2ob$2ob2$!");
-            assert_eq!(blinker_in.block(), blinker_out.block());
+            let blinker_out = parse(&hl, b"2bo$2bo$2bo2$!");
+            if blinker_in != blinker_out {
+                use format::write::format_rle;
+                panic!("{}\n{}", format_rle(&blinker_in.block()),
+                    format_rle(&blinker_out.block()));
+            }
         });
     }
 }
