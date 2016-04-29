@@ -10,7 +10,7 @@ fn expand_rle<A:Clone>(rle: &[(usize, A)]) -> Vec<A> {
     rle.iter().flat_map(|&(n, ref t)| iter::repeat(t.clone()).take(n)).collect()
 }
 
-fn tokens_to_matrix(tokens: &[RLEToken]) -> Vec<Vec<State>> {
+fn tokens_to_matrix(tokens: &[RLEToken]) -> Result<Vec<Vec<State>>, ()> {
     let mut matrix = Vec::new();
     let mut cur_line = Vec::new();
 
@@ -25,18 +25,18 @@ fn tokens_to_matrix(tokens: &[RLEToken]) -> Vec<Vec<State>> {
             }
             RLEToken::EndBlock => {
                 matrix.push(cur_line);
-                return matrix;
+                return Ok(matrix);
             }
         }
     }
 
-    panic!("RLE with no end.")
+    Err(())
 }
 
-pub fn block_from_rle<'a>(hl: &Hashlife<'a>, rle: &RLE) -> Block<'a> {
+pub fn block_from_rle<'a>(hl: &Hashlife<'a>, rle: &RLE) -> Result<Block<'a>, ()> {
     use std::cmp::max;
 
-    let mut matrix = tokens_to_matrix(&expand_rle(rle));
+    let mut matrix = try!(tokens_to_matrix(&expand_rle(rle)));
     let max_row_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
     let max_side = max(max_row_len, matrix.len());
     let res_side: usize = max(max_side, LEAF_SIZE).next_power_of_two();
@@ -51,7 +51,7 @@ pub fn block_from_rle<'a>(hl: &Hashlife<'a>, rle: &RLE) -> Block<'a> {
 
     let matrix = matrix.iter().map(|row| &**row).collect();
     //println!("depth {}", res_depth);
-    block_from_matrix(hl, res_depth, matrix)
+    Ok(block_from_matrix(hl, res_depth, matrix))
 }
 
 fn block_from_matrix<'a>(hl: &Hashlife<'a>, depth: u32, matrix: Vec<&[State]>)
@@ -136,14 +136,14 @@ mod test {
             (1, State(Dead)), (1, State(Dead)), (1, EndBlock)];
 
         Hashlife::with_new(|hl| {
-            assert_eq!(block_from_rle(&hl, &tokens0), Block::Leaf(0x12));
+            assert_eq!(block_from_rle(&hl, &tokens0), Ok(Block::Leaf(0x12)));
             let node = hl.node([[Block::Leaf(0x03), Block::Leaf(0x01)],
                 [Block::Leaf(0x01), Block::Leaf(0x00)]]);
-            assert_eq!(block_from_rle(&hl, &tokens1), Block::Node(node));
-            assert_eq!(block_from_rle(&hl, &tokens2), Block::Leaf(0x00));
+            assert_eq!(block_from_rle(&hl, &tokens1), Ok(Block::Node(node)));
+            assert_eq!(block_from_rle(&hl, &tokens2), Ok(Block::Leaf(0x00)));
             assert_eq!(block_from_rle(&hl, &vec![(1, EndLine), (1, EndBlock)]),
-                Block::Leaf(0x00));
-            assert_eq!(block_from_rle(&hl, &tokens3), Block::Leaf(0x00));
+                Ok(Block::Leaf(0x00)));
+            assert_eq!(block_from_rle(&hl, &tokens3), Ok(Block::Leaf(0x00)));
         });
     }
 }

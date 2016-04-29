@@ -6,7 +6,7 @@ use evolve::Hashlife;
 use block::Block;
 
 impl<'a> Hashlife<'a> {
-    pub fn block_from_bytes(&self, bytes: &[u8]) -> Option<Block<'a>> {
+    pub fn block_from_bytes(&self, bytes: &[u8]) -> Result<Block<'a>, ()> {
         use self::parse::parse_file;
         use self::build::block_from_rle;
         use nom::IResult;
@@ -16,9 +16,9 @@ impl<'a> Hashlife<'a> {
         with_newline.push(b'\n');
 
         if let IResult::Done(_, tokens) = parse_file(&with_newline) {
-            Some(block_from_rle(&self, &tokens))
+            block_from_rle(&self, &tokens)
         } else {
-            None
+            Err(())
         }
     }
 }
@@ -30,10 +30,12 @@ fn test_block_from_bytes() {
     use evolve::Hashlife;
 
     Hashlife::with_new(|hl| {
-        assert!(hl.block_from_bytes(b"bbo$boo$bbo!").is_some());
+        assert!(hl.block_from_bytes(b"bbo$boo$bbo!").is_ok());
         // From failed examples in `self::write::test::test_build_round_trip`
-        assert_eq!(hl.block_from_bytes(b"$!"), Some(Block::Leaf(0)));
+        assert_eq!(hl.block_from_bytes(b"$!"), Ok(Block::Leaf(0)));
         let longer_test = b"x = 2, y = 2, rule = B3/S23\nbb$bb!";
-        assert_eq!(hl.block_from_bytes(longer_test), Some(Block::Leaf(0)));
+        assert_eq!(hl.block_from_bytes(longer_test), Ok(Block::Leaf(0)));
+        // Test RLE lacking ending '!'
+        assert_eq!(hl.block_from_bytes(b"3o"), Err(()));
     });
 }

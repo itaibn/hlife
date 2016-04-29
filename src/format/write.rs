@@ -113,7 +113,7 @@ mod test {
                 let reformatted = format_rle(&block);
                 println!("{} -> {}", String::from_utf8(test.to_vec()).unwrap(),
                     reformatted);
-                assert_eq!(Some(block),
+                assert_eq!(Ok(block),
                     hl.block_from_bytes(reformatted.as_bytes()));
             }
         });
