@@ -105,8 +105,7 @@ fn rle_compress<A:Eq>(tokens: Vec<A>) -> Vec<(usize, A)> {
     let mut count = 0;
 
     for token in tokens {
-        let cond = prev_.as_ref().map(|prev| *prev == token).unwrap_or(false);
-        if cond {
+        if prev_.as_ref() == Some(&token) {
             count += 1;
             // Temp
             res.push((0, token));
