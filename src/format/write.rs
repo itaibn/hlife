@@ -62,12 +62,13 @@ fn matrix_to_tokens(matrix: Vec<Vec<State>>) -> Vec<RLEToken> {
     res
 }
 
-// Skip RLE compression
 fn tokens_to_string(x: usize, y: usize, tokens: Vec<RLEToken>) -> String {
+    let rle_compressed = rle_compress(tokens);
+
     let mut res = format!("x = {}, y = {}, rule = B3/S23\n", x, y);
     let mut line_len = 0;
 
-    for token in tokens {
+    for (_, token) in rle_compressed {
         match token {
             RLEToken::State(State::Alive) => {
                 res.push('o');
@@ -95,6 +96,26 @@ fn tokens_to_string(x: usize, y: usize, tokens: Vec<RLEToken>) -> String {
         res.push('\n');
     }
 
+    res
+}
+
+fn rle_compress<A:Eq>(tokens: Vec<A>) -> Vec<(usize, A)> {
+    let mut res = Vec::new();
+    let mut prev_: Option<A> = None;
+    let mut count = 0;
+
+    for token in tokens {
+        let cond = prev_.as_ref().map(|prev| *prev == token).unwrap_or(false);
+        if cond {
+            count += 1;
+            // Temp
+            res.push((0, token));
+        } else {
+            prev_.map(|prev| res.push((count, prev)));
+            prev_ = Some(token);
+        }
+    }
+    prev_.map(|prev| res.push((count, prev)));
     res
 }
 
