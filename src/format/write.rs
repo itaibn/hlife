@@ -63,34 +63,30 @@ fn matrix_to_tokens(matrix: Vec<Vec<State>>) -> Vec<RLEToken> {
 }
 
 fn tokens_to_string(x: usize, y: usize, tokens: Vec<RLEToken>) -> String {
+    fn token_len_to_string(len: usize, token: RLEToken) -> String {
+        let mut res = if len == 1 {String::new()} else {len.to_string()};
+        res.push(match token {
+            RLEToken::State(State::Alive) => 'o',
+            RLEToken::State(State::Dead) => 'b',
+            RLEToken::EndLine => '$',
+            RLEToken::EndBlock => '!',
+        });
+        res
+    }
+
     let rle_compressed = rle_compress(tokens);
 
     let mut res = format!("x = {}, y = {}, rule = B3/S23\n", x, y);
     let mut line_len = 0;
 
-    for (_, token) in rle_compressed {
-        match token {
-            RLEToken::State(State::Alive) => {
-                res.push('o');
-                line_len += 1;
-            }
-            RLEToken::State(State::Dead) => {
-                res.push('b');
-                line_len += 1;
-            }
-            RLEToken::EndLine => {
-                res.push('$');
-                line_len += 1;
-            }
-            RLEToken::EndBlock => {
-                res.push('!');
-                line_len += 1;
-            }
-        }
-        if line_len >= 79 {
+    for (len, token) in rle_compressed {
+        let token_string = token_len_to_string(len, token);
+        if line_len + token_string.len() > 79 {
             res.push('\n');
             line_len = 0;
         }
+        line_len += token_string.len();
+        res.push_str(&token_string);
     }
     if line_len > 0 {
         res.push('\n');
@@ -107,15 +103,20 @@ fn rle_compress<A:Eq>(tokens: Vec<A>) -> Vec<(usize, A)> {
     for token in tokens {
         if prev_.as_ref() == Some(&token) {
             count += 1;
-            // Temp
-            res.push((0, token));
         } else {
             prev_.map(|prev| res.push((count, prev)));
             prev_ = Some(token);
+            count = 1;
         }
     }
     prev_.map(|prev| res.push((count, prev)));
     res
+}
+
+#[test]
+fn test_rle_compress() {
+    assert_eq!(rle_compress(vec![1; 5]), vec![(5, 1)]);
+    assert_eq!(rle_compress(vec![1, 2, 1, 1]), vec![(1, 1), (1, 2), (2, 1)]);
 }
 
 #[cfg(test)]
@@ -149,10 +150,10 @@ mod test {
             let mut bc = hl.block_cache();
             let b0 = Block::Leaf(0x03);
             assert_eq!(format_rle(&b0),
-                "x = 2, y = 2, rule = B3/S23\noo$bb!\n");
+                "x = 2, y = 2, rule = B3/S23\n2o$2b!\n");
             let b1 = Block::Node(bc.node([[b0, b0], [b0, b0]]));
             assert_eq!(format_rle(&b1),
-                "x = 4, y = 4, rule = B3/S23\noooo$bbbb$oooo$bbbb!\n");
+                "x = 4, y = 4, rule = B3/S23\n4o$4b$4o$4b!\n");
         });
     }
 }
