@@ -3,6 +3,13 @@ use std::cell::{RefCell, RefMut};
 pub use block::{Block, Node, Leaf, LEAF_SIZE};
 use block::CABlockCache;
 
+// TODO: Incorporate into rest of this code
+pub fn make_2x2<A,F>(func: F) -> [[A; 2]; 2]
+    where F : Fn(usize, usize) -> A {
+    
+    [[func(0, 0), func(0, 1)], [func(1, 0), func(1, 1)]]
+}
+
 pub struct Hashlife<'a> {
     table: RefCell<CABlockCache<'a>>,
     small_evolve_cache: [u8; 1<<16],
@@ -56,6 +63,10 @@ impl<'a> Hashlife<'a> {
         self.block_cache().node(elems)
     }
 
+    pub fn node_block(&self, elems: [[Block<'a>; 2]; 2]) -> Block<'a> {
+        Block::Node(self.node(elems))
+    }
+
     pub fn block_cache(&self) -> RefMut<CABlockCache<'a>> {
         self.table.borrow_mut()
     }
@@ -107,10 +118,11 @@ impl<'a> Hashlife<'a> {
                 res_components[i][j] = self.evolve(subpart);
             }
         }
-        Block::Node(self.node(res_components))
+        self.node_block(res_components)
     }
 
-    fn subblock(&self, node: Node<'a>, x: u8, y: u8) -> Block<'a>
+    /// Public for use in other modules in this crate; don't rely on it.
+    pub fn subblock(&self, node: Node<'a>, x: u8, y: u8) -> Block<'a>
     {
         let (x, y) = (x as usize, y as usize);
 
@@ -136,7 +148,7 @@ impl<'a> Hashlife<'a> {
                     .unwrap_node().corners()[xx&1][yy&1];
             }
         }
-        Block::Node(self.node(components))
+        self.node_block(components)
     }
 
     fn subblock_leaf(&self, node: Node<'a>, x: usize, y: usize) -> Block<'a>
@@ -172,7 +184,7 @@ impl<'a> Hashlife<'a> {
             let mut big_blank = *blank_cache.last().unwrap();
             let repeats = depth + 1 - blank_cache.len();
             for _ in 0..repeats {
-                big_blank = Block::Node(self.node([[big_blank; 2]; 2]));
+                big_blank = self.node_block([[big_blank; 2]; 2]);
                 blank_cache.push(big_blank);
             }
             big_blank
