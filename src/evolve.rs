@@ -11,6 +11,18 @@ pub struct Hashlife<'a> {
     //placeholder_node: Node<'a>,
 }
 
+pub struct Block<'a> {
+    raw: RawBlock<'a>,
+    hl: &'a Hashlife<'a>,
+    depth: usize,
+}
+
+pub struct Node<'a> {
+    raw: RawNode<'a>,
+    hl: &'a Hashlife<'a>,
+    depth: usize,
+}
+
 // TODO: Incorporate into rest of this code
 pub fn make_2x2<A,F>(func: F) -> [[A; 2]; 2]
     where F : Fn(usize, usize) -> A {
@@ -199,6 +211,22 @@ impl<'a> Hashlife<'a> {
                 blank_cache.push(big_blank);
             }
             big_blank
+        }
+    }
+
+    fn block_from_raw(&'a self, raw: RawBlock<'a>) -> Block<'a> {
+        Block {
+            raw: raw,
+            hl: &self,
+            depth: raw.depth(),
+        }
+    }
+
+    fn node_from_raw(&'a self, raw: RawNode<'a>) -> Node<'a> {
+        Node {
+            raw: raw,
+            hl: &self,
+            depth: raw.depth(),
         }
     }
 }
