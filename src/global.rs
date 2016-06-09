@@ -1,5 +1,5 @@
 
-use block::QUARTER_LEAF_MASK;
+use block::{Block, Node, QUARTER_LEAF_MASK};
 use evolve::*;
 use util::log2_upper;
 

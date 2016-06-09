@@ -1,8 +1,15 @@
 use std::cell::{RefCell, RefMut};
 use std::fmt;
 
-pub use block::{Block, Node, Leaf, LEAF_SIZE};
-use block::CABlockCache;
+pub use block::{Leaf, LEAF_SIZE};
+use block::{Block as RawBlock, Node as RawNode, CABlockCache};
+
+pub struct Hashlife<'a> {
+    table: RefCell<CABlockCache<'a>>,
+    small_evolve_cache: [u8; 1<<16],
+    blank_cache: RefCell<Vec<RawBlock<'a>>>,
+    //placeholder_node: Node<'a>,
+}
 
 // TODO: Incorporate into rest of this code
 pub fn make_2x2<A,F>(func: F) -> [[A; 2]; 2]
@@ -17,13 +24,6 @@ pub fn make_3x3<A,F>(func: F) -> [[A; 3]; 3]
     [[func(0, 0), func(0, 1), func(0, 2)],
      [func(1, 0), func(1, 1), func(1, 2)],
      [func(2, 0), func(2, 1), func(2, 2)]]
-}
-
-pub struct Hashlife<'a> {
-    table: RefCell<CABlockCache<'a>>,
-    small_evolve_cache: [u8; 1<<16],
-    blank_cache: RefCell<Vec<Block<'a>>>,
-    //placeholder_node: Node<'a>,
 }
 
 fn mk_small_evolve_cache() -> [u8; 1<<16] {
@@ -61,40 +61,40 @@ impl<'a> Hashlife<'a> {
             let hashlife = Hashlife {
                 table: RefCell::new(bcache),
                 small_evolve_cache: mk_small_evolve_cache(),
-                blank_cache: RefCell::new(vec![Block::Leaf(0)]),
+                blank_cache: RefCell::new(vec![RawBlock::Leaf(0)]),
                 //placeholder_node: placeholder_node,
             };
             f(hashlife)
         })
     }
 
-    pub fn node(&self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
+    pub fn node(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawNode<'a> {
         self.block_cache().node(elems)
     }
 
-    pub fn node_block(&self, elems: [[Block<'a>; 2]; 2]) -> Block<'a> {
-        Block::Node(self.node(elems))
+    pub fn node_block(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawBlock<'a> {
+        RawBlock::Node(self.node(elems))
     }
 
     pub fn block_cache(&self) -> RefMut<CABlockCache<'a>> {
         self.table.borrow_mut()
     }
 
-    pub fn evolve(&self, node: Node<'a>) -> Block<'a> {
+    pub fn evolve(&self, node: RawNode<'a>) -> RawBlock<'a> {
         let elem = node.corners();
 
         node.evolve_cache().eval(move ||
             match elem[0][0] {
-                Block::Leaf(a00) => {
+                RawBlock::Leaf(a00) => {
                     let a01 = elem[0][1].unwrap_leaf();
                     let a10 = elem[1][0].unwrap_leaf();
                     let a11 = elem[1][1].unwrap_leaf();
                     let res_leaf = self.evolve_leaf(
                         [[a00, a01], [a10, a11]]);
-                    Block::Leaf(res_leaf)
+                    RawBlock::Leaf(res_leaf)
                 },
-                Block::Node(_) => {
-                    let mut intermediates = [[Block::Node(node); 3]; 3];
+                RawBlock::Node(_) => {
+                    let mut intermediates = [[RawBlock::Node(node); 3]; 3];
                     for i in 0..3 {
                         for j in 0..3 {
                             // I don't know we need two separate `let`
@@ -112,7 +112,7 @@ impl<'a> Hashlife<'a> {
         )
     }
 
-    fn evolve_finish(&self, parts: [[Block<'a>; 3]; 3]) -> Block<'a>
+    fn evolve_finish(&self, parts: [[RawBlock<'a>; 3]; 3]) -> RawBlock<'a>
     {
         let mut res_components = [[parts[0][0]; 2]; 2];
         for i in 0..2 {
@@ -131,7 +131,7 @@ impl<'a> Hashlife<'a> {
     }
 
     /// Public for use in other modules in this crate; don't rely on it.
-    pub fn subblock(&self, node: Node<'a>, x: u8, y: u8) -> Block<'a>
+    pub fn subblock(&self, node: RawNode<'a>, x: u8, y: u8) -> RawBlock<'a>
     {
         let (x, y) = (x as usize, y as usize);
 
@@ -139,16 +139,17 @@ impl<'a> Hashlife<'a> {
             node.corners()[x/2][y/2]
         } else {
             match node.corners()[0][0] {
-                Block::Leaf(_) => self.subblock_leaf(node, x, y),
-                Block::Node(_) => self.subblock_node(node, x, y),
+                RawBlock::Leaf(_) => self.subblock_leaf(node, x, y),
+                RawBlock::Node(_) => self.subblock_node(node, x, y),
             }
         }
     }
 
-    fn subblock_node(&self, node: Node<'a>, x: usize, y: usize) -> Block<'a>
-    {
+    fn subblock_node(&self, node: RawNode<'a>, x: usize, y: usize) ->
+        RawBlock<'a> {
+
         //let (x, y) = (x as usize, y as usize);
-        let mut components = [[Block::Node(node); 2]; 2];
+        let mut components = [[RawBlock::Node(node); 2]; 2];
         for i in 0..2 {
             for j in 0..2 {
                 let xx = i+x;
@@ -160,8 +161,9 @@ impl<'a> Hashlife<'a> {
         self.node_block(components)
     }
 
-    fn subblock_leaf(&self, node: Node<'a>, x: usize, y: usize) -> Block<'a>
-    {
+    fn subblock_leaf(&self, node: RawNode<'a>, x: usize, y: usize) ->
+        RawBlock<'a> {
+
         let mut output_leaf = 0;
         for i in 0..2 {
             for j in 0..2 {
@@ -172,7 +174,7 @@ impl<'a> Hashlife<'a> {
                 output_leaf |= cell << (i + 4*j);
             }
         }
-        Block::Leaf(output_leaf)
+        RawBlock::Leaf(output_leaf)
     }
 
     #[inline]
@@ -184,7 +186,7 @@ impl<'a> Hashlife<'a> {
         self.small_evolve_cache[entry]
     }
 
-    pub fn blank(&self, depth: usize) -> Block<'a> {
+    pub fn blank(&self, depth: usize) -> RawBlock<'a> {
         let mut blank_cache = self.blank_cache.borrow_mut();
 
         if depth < blank_cache.len() {
