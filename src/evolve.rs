@@ -1,4 +1,5 @@
 use std::cell::{RefCell, RefMut};
+use std::fmt;
 
 pub use block::{Block, Node, Leaf, LEAF_SIZE};
 use block::CABlockCache;
@@ -8,6 +9,14 @@ pub fn make_2x2<A,F>(func: F) -> [[A; 2]; 2]
     where F : Fn(usize, usize) -> A {
     
     [[func(0, 0), func(0, 1)], [func(1, 0), func(1, 1)]]
+}
+
+pub fn make_3x3<A,F>(func: F) -> [[A; 3]; 3]
+    where F : Fn(usize, usize) -> A {
+
+    [[func(0, 0), func(0, 1), func(0, 2)],
+     [func(1, 0), func(1, 1), func(1, 2)],
+     [func(2, 0), func(2, 1), func(2, 2)]]
 }
 
 pub struct Hashlife<'a> {
@@ -189,6 +198,12 @@ impl<'a> Hashlife<'a> {
             }
             big_blank
         }
+    }
+}
+
+impl<'a> fmt::Debug for Hashlife<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<Hashlife instance>")
     }
 }
 

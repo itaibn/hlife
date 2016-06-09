@@ -1,14 +1,18 @@
 
+use block::QUARTER_LEAF_MASK;
 use evolve::*;
+use util::log2_upper;
 
+#[derive(Debug)]
 pub struct Pattern<'a, 'b:'a> {
     hl: &'a Hashlife<'b>,
     block: Block<'b>,
+    dead_space: u64,
 }
 
 impl<'a, 'b> Pattern<'a, 'b> {
     pub fn new(hl: &'a Hashlife<'b>, block: Block<'b>) -> Self {
-        Pattern {hl: hl, block: block}
+        Pattern {hl: hl, block: block, dead_space: 0}
     }
 
     pub fn block(&self) -> Block<'b> {
@@ -28,6 +32,10 @@ impl<'a, 'b> Pattern<'a, 'b> {
     }
 
     fn step_pow2(&mut self, lognsteps: usize) {
+        self.step_pow2_0(lognsteps);
+    }
+
+    fn step_pow2_0(&mut self, lognsteps: usize) {
         use std::usize;
 
         let blank = self.hl.blank(lognsteps);
@@ -53,6 +61,24 @@ impl<'a, 'b> Pattern<'a, 'b> {
         self.block = matrix_to_block(self.hl, usize::MAX, lognsteps,
             evolve_matrix);
     }
+
+    fn step_pow2_1(&mut self, lognsteps: usize) {
+        while 1 << (lognsteps + 1) < self.dead_space {
+            //self.exand();
+        }
+        unimplemented!()
+    }
+
+/*
+    fn reserve_dead_space(&mut self, target: u64) {
+        let mut depth = self.block.depth();
+        while self.dead_space < target {
+            self.block = encase(&self.hl, self.block);
+            self.dead_space += 1 << (depth-1);
+            depth += 1;
+        }
+    }
+*/
 }
 
 impl<'a, 'b> Eq for Pattern<'a, 'b> { }
@@ -154,6 +180,47 @@ fn matrix_to_block<'a>(hl: &Hashlife<'a>, layers_: usize, in_depth: usize,
         }
     }
     Block::Node(hl.node(top_square))
+}
+
+fn step_pow2<'a>(hl: &Hashlife<'a>, node: Node<'a>, lognsteps: usize) ->
+    Block<'a> {
+
+    assert!(lognsteps < node.depth());
+
+    if lognsteps == node.depth() {
+        hl.evolve(node)
+    } else {
+        let parts = make_3x3(|i, j| {
+            hl.subblock(hl.subblock(node, i as u8, j as u8).unwrap_node(), 1, 1)
+        });
+
+        hl.node_block(make_2x2(|x, y| {
+            let around = hl.node(make_2x2(|i, j| parts[x+i][y+j]));
+            step_pow2(hl, around, lognsteps-1)
+        }))
+    }
+}
+
+fn encase<'a>(hl: &Hashlife<'a>, b: Block<'a>) -> Block<'a> {
+    match b {
+        Block::Leaf(l) => hl.node_block(make_2x2(|y, x| {
+            panic!();
+            let shift = (1-y)*LEAF_SIZE*(LEAF_SIZE/2) + (1-x)*(LEAF_SIZE/2);
+            let part = QUARTER_LEAF_MASK & (l >> shift);
+            Block::Leaf(part << (y*LEAF_SIZE*(LEAF_SIZE/2) + x*(LEAF_SIZE/2)))
+        })),
+        Block::Node(n) => hl.node_block(make_2x2(|y0, x0| {
+            hl.node_block(make_2x2(|y1, x1| {
+                let x = 2*x0 + x1;
+                let y = 2*y0 + y1;
+                if 0 < x && x < 3 && 0 < y && y < 3 {
+                    n.corners()[y-1][x-1]
+                } else {
+                    hl.blank(b.depth() - 1)
+                }
+            }))
+        })),
+    }
 }
 
 #[cfg(test)]

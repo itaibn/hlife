@@ -96,6 +96,8 @@ pub type Node<'a> = &'a HeapNode<'a>;
 pub type Leaf = u8;
 
 pub const LEAF_SIZE: usize = 2;
+// For global::encase
+pub const QUARTER_LEAF_MASK: Leaf = 0x01;
 
 impl<'a> HeapNode<'a> {
     fn from_elems_and_hash(elems: [[Block; 2]; 2], hash: u64) -> HeapNode {
@@ -112,6 +114,10 @@ impl<'a> HeapNode<'a> {
 
     pub fn evolve_cache(&self) -> &Cache<Block<'a>> {
         &self.evolve
+    }
+
+    pub fn depth(&self) -> usize {
+        self.corners()[0][0].depth() + 1
     }
 }
 

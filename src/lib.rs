@@ -11,11 +11,13 @@
 #[macro_use]
 extern crate nom;
 
-mod block;
-mod cache;
 pub mod evolve;
 pub mod format;
 #[allow(dead_code)]
 pub mod global;
 
 pub use evolve::Hashlife;
+
+mod block;
+mod cache;
+mod util;
