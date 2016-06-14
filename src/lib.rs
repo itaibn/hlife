@@ -13,7 +13,6 @@ extern crate nom;
 
 pub mod evolve;
 pub mod format;
-#[allow(dead_code)]
 pub mod global;
 
 pub use evolve::Hashlife;

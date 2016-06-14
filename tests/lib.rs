@@ -1,7 +1,7 @@
 extern crate hlife;
 
 use std::io::{self, Read};
-use std::fs::{self, File};
+use std::fs::File;
 
 use hlife::Hashlife;
 use hlife::global::Pattern;

@@ -11,6 +11,7 @@ pub struct Hashlife<'a> {
     //placeholder_node: Node<'a>,
 }
 
+/*
 struct Block<'a> {
     raw: RawBlock<'a>,
     hl: &'a Hashlife<'a>,
@@ -22,6 +23,7 @@ struct Node<'a> {
     hl: &'a Hashlife<'a>,
     depth: usize,
 }
+*/
 
 // TODO: Incorporate into rest of this code
 pub fn make_2x2<A,F>(func: F) -> [[A; 2]; 2]
@@ -185,9 +187,7 @@ impl<'a> Hashlife<'a> {
                 //println!("i {} j {} output_leaf {:x}", i, j, output_leaf);
             }
         }
-        let res = RawBlock::Leaf(output_leaf);
-        //println!("ol {:x}\n{:?}", output_leaf, res);
-        res
+        RawBlock::Leaf(output_leaf)
     }
 
     #[inline]
@@ -215,6 +215,7 @@ impl<'a> Hashlife<'a> {
         }
     }
 
+/*
     fn block_from_raw(&'a self, raw: RawBlock<'a>) -> Block<'a> {
         Block {
             raw: raw,
@@ -230,6 +231,7 @@ impl<'a> Hashlife<'a> {
             depth: raw.depth(),
         }
     }
+*/
 
     pub fn step_pow2(&self, node: RawNode<'a>, lognsteps: usize) -> RawBlock<'a>
     {
