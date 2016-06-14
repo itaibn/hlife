@@ -11,13 +11,13 @@ pub struct Hashlife<'a> {
     //placeholder_node: Node<'a>,
 }
 
-pub struct Block<'a> {
+struct Block<'a> {
     raw: RawBlock<'a>,
     hl: &'a Hashlife<'a>,
     depth: usize,
 }
 
-pub struct Node<'a> {
+struct Node<'a> {
     raw: RawNode<'a>,
     hl: &'a Hashlife<'a>,
     depth: usize,
@@ -145,10 +145,11 @@ impl<'a> Hashlife<'a> {
     /// Public for use in other modules in this crate; don't rely on it.
     pub fn subblock(&self, node: RawNode<'a>, x: u8, y: u8) -> RawBlock<'a>
     {
+        debug_assert!(x < 3 && y < 3);
         let (x, y) = (x as usize, y as usize);
 
         if (x|y)&1 == 0 {
-            node.corners()[x/2][y/2]
+            node.corners()[y/2][x/2]
         } else {
             match node.corners()[0][0] {
                 RawBlock::Leaf(_) => self.subblock_leaf(node, x, y),
@@ -181,12 +182,16 @@ impl<'a> Hashlife<'a> {
             for j in 0..2 {
                 let xx = i+x;
                 let yy = j+y;
-                let cell = 1 & (node.corners()[xx/2][yy/2].unwrap_leaf()
-                    >> ((xx&2) + 4*(yy&2)));
+                debug_assert!(xx < 4 && yy < 4);
+                let cell = 1 & (node.corners()[yy/2][xx/2].unwrap_leaf()
+                    >> ((xx&1) + 4*(yy&1)));
                 output_leaf |= cell << (i + 4*j);
+                println!("i {} j {} output_leaf {:x}", i, j, output_leaf);
             }
         }
-        RawBlock::Leaf(output_leaf)
+        let res = RawBlock::Leaf(output_leaf);
+        println!("ol {:x}\n{:?}", output_leaf, res);
+        res
     }
 
     #[inline]
@@ -227,6 +232,25 @@ impl<'a> Hashlife<'a> {
             raw: raw,
             hl: &self,
             depth: raw.depth(),
+        }
+    }
+
+    pub fn step_pow2(&self, node: RawNode<'a>, lognsteps: usize) -> RawBlock<'a>
+    {
+        assert!(lognsteps < node.depth());
+
+        if lognsteps == node.depth() - 1 {
+            self.evolve(node)
+        } else {
+            let parts = make_3x3(|i, j| {
+                self.subblock(self.subblock(node, i as u8, j as
+                    u8).unwrap_node(), 1, 1)
+            });
+
+            self.node_block(make_2x2(|x, y| {
+                let around = self.node(make_2x2(|i, j| parts[x+i][y+j]));
+                self.step_pow2(around, lognsteps)
+            }))
         }
     }
 }
@@ -308,6 +332,45 @@ mod test {
             assert_eq!(hl.blank(0), Block::Leaf(0));
             assert_eq!(hl.blank(1).depth(), 1);
             assert_eq!(hl.blank(2).depth(), 2);
+        });
+    }
+ 
+    #[test]
+    fn test_step_pow2() {
+        Hashlife::with_new(|hl| {
+            let b = hl.block_from_bytes(b"2$6o!").unwrap();
+            let n = b.unwrap_node();
+            assert_eq!(hl.step_pow2(n, 0), hl.block_from_bytes(b"3o$3o!")
+                .unwrap());
+            assert_eq!(hl.step_pow2(n, 1), hl.block_from_bytes(b"3bo$2bo$2o!")
+                .unwrap());
+        });
+    }
+
+    #[test]
+    fn test_subblock() {
+        Hashlife::with_new(|hl| {
+            let b = hl.block_from_bytes(b"bo$bo$3o$o!").unwrap();
+            let n = b.unwrap_node();
+
+            assert_eq!(hl.subblock(n, 0, 0),
+                hl.block_from_bytes(b"bo$bo!").unwrap());
+            assert_eq!(hl.subblock(n, 0, 1),
+                hl.block_from_bytes(b"bo$oo!").unwrap());
+            assert_eq!(hl.subblock(n, 0, 2),
+                hl.block_from_bytes(b"oo$o!").unwrap());
+            assert_eq!(hl.subblock(n, 1, 0),
+                hl.block_from_bytes(b"o$o!").unwrap());
+            assert_eq!(hl.subblock(n, 1, 1),
+                hl.block_from_bytes(b"o$oo!").unwrap());
+            assert_eq!(hl.subblock(n, 1, 2),
+                hl.block_from_bytes(b"2o!").unwrap());
+            assert_eq!(hl.subblock(n, 2, 0),
+                hl.block_from_bytes(b"!").unwrap());
+            assert_eq!(hl.subblock(n, 2, 1),
+                hl.block_from_bytes(b"$o!").unwrap());
+            assert_eq!(hl.subblock(n, 2, 2),
+                hl.block_from_bytes(b"o!").unwrap());
         });
     }
 }

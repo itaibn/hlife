@@ -32,7 +32,7 @@ impl<'a, 'b> Pattern<'a, 'b> {
     }
 
     fn step_pow2(&mut self, lognsteps: usize) {
-        self.step_pow2_0(lognsteps);
+        self.step_pow2_1(lognsteps);
     }
 
     fn step_pow2_0(&mut self, lognsteps: usize) {
@@ -63,10 +63,24 @@ impl<'a, 'b> Pattern<'a, 'b> {
     }
 
     fn step_pow2_1(&mut self, lognsteps: usize) {
-        while 1 << (lognsteps + 1) < self.dead_space {
-            //self.exand();
+        use std::cmp;
+        let new_length = self.length() + 1 << (1 + lognsteps);
+        let depth_needed = log2_upper(new_length) as usize;
+        while self.block.depth() < depth_needed {
+            self.encase();
         }
-        unimplemented!()
+        let reencase = encase(&self.hl, self.block);
+        self.block = step_pow2(&self.hl, reencase.unwrap_node(), lognsteps);
+    }
+
+    fn encase(&mut self) {
+        let depth = self.block.depth();
+        self.block = encase(&self.hl, self.block);
+        self.dead_space += 1 << (depth-1);
+    }
+
+    fn length(&self) -> u64 {
+        ((LEAF_SIZE as u64) << self.block.depth()) - 2 * self.dead_space
     }
 
 /*
@@ -91,6 +105,7 @@ impl<'a, 'b> PartialEq for Pattern<'a, 'b> {
         if a.depth() > b.depth() {
             swap(&mut a, &mut b);
         }
+/*
         while b.depth() > a.depth() {
             let corners = b.unwrap_node().corners();
             if !corners[0][1].is_blank()
@@ -99,6 +114,10 @@ impl<'a, 'b> PartialEq for Pattern<'a, 'b> {
                 return false;
             }
             b = corners[0][0];
+        }
+*/
+        while b.depth() > a.depth() {
+            a = encase(&self.hl, a);
         }
         a == b
     }
@@ -182,25 +201,6 @@ fn matrix_to_block<'a>(hl: &Hashlife<'a>, layers_: usize, in_depth: usize,
     Block::Node(hl.node(top_square))
 }
 
-fn step_pow2<'a>(hl: &Hashlife<'a>, node: Node<'a>, lognsteps: usize) ->
-    Block<'a> {
-
-    assert!(lognsteps < node.depth());
-
-    if lognsteps == node.depth() {
-        hl.evolve(node)
-    } else {
-        let parts = make_3x3(|i, j| {
-            hl.subblock(hl.subblock(node, i as u8, j as u8).unwrap_node(), 1, 1)
-        });
-
-        hl.node_block(make_2x2(|x, y| {
-            let around = hl.node(make_2x2(|i, j| parts[x+i][y+j]));
-            step_pow2(hl, around, lognsteps-1)
-        }))
-    }
-}
-
 fn encase<'a>(hl: &Hashlife<'a>, b: Block<'a>) -> Block<'a> {
     match b {
         Block::Leaf(l) => hl.node_block(make_2x2(|y, x| {
@@ -223,6 +223,25 @@ fn encase<'a>(hl: &Hashlife<'a>, b: Block<'a>) -> Block<'a> {
     }
 }
 
+fn step_pow2<'a>(hl: &Hashlife<'a>, node: Node<'a>, lognsteps: usize) ->
+    Block<'a> {
+
+    assert!(lognsteps < node.depth());
+
+    if lognsteps == node.depth() - 1 {
+        hl.evolve(node)
+    } else {
+        let parts = make_3x3(|i, j| {
+            hl.subblock(hl.subblock(node, i as u8, j as u8).unwrap_node(), 1, 1)
+        });
+
+        hl.node_block(make_2x2(|x, y| {
+            let around = hl.node(make_2x2(|i, j| parts[x+i][y+j]));
+            step_pow2(&hl, around, lognsteps)
+        }))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::Pattern;
@@ -235,9 +254,9 @@ mod test {
     #[test]
     fn test_blinker_1gen() {
         Hashlife::with_new(|hl| {
-            let mut blinker_in = parse(&hl, b"3o!");
+            let mut blinker_in = parse(&hl, b"$3o!");
             blinker_in.step(1);
-            let blinker_out = parse(&hl, b"2bo$2bo$2bo2$!");
+            let blinker_out = parse(&hl, b"bo$bo$bo2$!");
             if blinker_in != blinker_out {
                 use format::write::format_rle;
                 panic!("{}\n{}", format_rle(&blinker_in.block()),
