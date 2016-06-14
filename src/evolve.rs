@@ -115,7 +115,7 @@ impl<'a> Hashlife<'a> {
                             let subblock = self.subblock(node, i as u8,
                                 j as u8);
                             let subnode = subblock.unwrap_node();
-                            intermediates[i][j] = self.evolve(subnode);
+                            intermediates[j][i] = self.evolve(subnode);
                         }
                     }
                     self.evolve_finish(intermediates)
@@ -162,15 +162,11 @@ impl<'a> Hashlife<'a> {
         RawBlock<'a> {
 
         //let (x, y) = (x as usize, y as usize);
-        let mut components = [[RawBlock::Node(node); 2]; 2];
-        for i in 0..2 {
-            for j in 0..2 {
-                let xx = i+x;
-                let yy = j+y;
-                components[i][j] = node.corners()[xx/2][yy/2]
-                    .unwrap_node().corners()[xx&1][yy&1];
-            }
-        }
+        let components = make_2x2(|j, i| {
+            let xx = i+x;
+            let yy = j+y;
+            node.corners()[yy/2][xx/2].unwrap_node().corners()[yy&1][xx&1]
+        });
         self.node_block(components)
     }
 
@@ -186,11 +182,11 @@ impl<'a> Hashlife<'a> {
                 let cell = 1 & (node.corners()[yy/2][xx/2].unwrap_leaf()
                     >> ((xx&1) + 4*(yy&1)));
                 output_leaf |= cell << (i + 4*j);
-                println!("i {} j {} output_leaf {:x}", i, j, output_leaf);
+                //println!("i {} j {} output_leaf {:x}", i, j, output_leaf);
             }
         }
         let res = RawBlock::Leaf(output_leaf);
-        println!("ol {:x}\n{:?}", output_leaf, res);
+        //println!("ol {:x}\n{:?}", output_leaf, res);
         res
     }
 
@@ -247,8 +243,8 @@ impl<'a> Hashlife<'a> {
                     u8).unwrap_node(), 1, 1)
             });
 
-            self.node_block(make_2x2(|x, y| {
-                let around = self.node(make_2x2(|i, j| parts[x+i][y+j]));
+            self.node_block(make_2x2(|y, x| {
+                let around = self.node(make_2x2(|j, i| parts[x+i][y+j]));
                 self.step_pow2(around, lognsteps)
             }))
         }
@@ -340,6 +336,7 @@ mod test {
         Hashlife::with_new(|hl| {
             let b = hl.block_from_bytes(b"2$6o!").unwrap();
             let n = b.unwrap_node();
+            assert_eq!(hl.step_pow2(n, 1), hl.evolve(n));
             assert_eq!(hl.step_pow2(n, 0), hl.block_from_bytes(b"3o$3o!")
                 .unwrap());
             assert_eq!(hl.step_pow2(n, 1), hl.block_from_bytes(b"3bo$2bo$2o!")
@@ -348,7 +345,7 @@ mod test {
     }
 
     #[test]
-    fn test_subblock() {
+    fn test_subblock_0() {
         Hashlife::with_new(|hl| {
             let b = hl.block_from_bytes(b"bo$bo$3o$o!").unwrap();
             let n = b.unwrap_node();
@@ -371,6 +368,20 @@ mod test {
                 hl.block_from_bytes(b"$o!").unwrap());
             assert_eq!(hl.subblock(n, 2, 2),
                 hl.block_from_bytes(b"o!").unwrap());
+        });
+    }
+
+    #[test]
+    fn test_subblock_1() {
+        Hashlife::with_new(|hl| {
+            let b = hl.block_from_bytes(b"2$7o!").unwrap();
+            let n = b.unwrap_node();
+            assert_eq!(hl.subblock(n, 1, 0),
+                hl.block_from_bytes(b"2$4o!").unwrap());
+            assert_eq!(hl.subblock(n, 0, 1),
+                hl.block_from_bytes(b"4o!").unwrap());
+            assert_eq!(hl.subblock(n, 2, 0),
+                hl.block_from_bytes(b"2$3o!").unwrap());
         });
     }
 }

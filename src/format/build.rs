@@ -11,6 +11,7 @@ fn expand_rle<A:Clone>(rle: &[(usize, A)]) -> Vec<A> {
     rle.iter().flat_map(|&(n, ref t)| iter::repeat(t.clone()).take(n)).collect()
 }
 
+// matrix[y][x]
 fn tokens_to_matrix(tokens: &[RLEToken]) -> Result<Vec<Vec<State>>, ()> {
     let mut matrix = Vec::new();
     let mut cur_line = Vec::new();

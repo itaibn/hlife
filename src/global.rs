@@ -64,13 +64,16 @@ impl<'a, 'b> Pattern<'a, 'b> {
 
     fn step_pow2_1(&mut self, lognsteps: usize) {
         use std::cmp;
-        let new_length = self.length() + 1 << (1 + lognsteps);
-        let depth_needed = log2_upper(new_length) as usize;
+        let new_length = self.length() + (1 << (1 + lognsteps));
+        let depth_needed = log2_upper(new_length / (LEAF_SIZE as u64)) as usize;
+        println!("depth {} needed {} l {} nl {}", self.block.depth(),
+            depth_needed, self.length(), new_length);
         while self.block.depth() < depth_needed {
             self.encase();
         }
         let reencase = encase(&self.hl, self.block);
-        self.block = step_pow2(&self.hl, reencase.unwrap_node(), lognsteps);
+        self.block = self.hl.step_pow2(reencase.unwrap_node(), lognsteps);
+        println!("final {}", self.block.depth());
     }
 
     fn encase(&mut self) {
@@ -256,7 +259,7 @@ mod test {
         Hashlife::with_new(|hl| {
             let mut blinker_in = parse(&hl, b"$3o!");
             blinker_in.step(1);
-            let blinker_out = parse(&hl, b"bo$bo$bo2$!");
+            let blinker_out = parse(&hl, b"bo$bo$bo!");
             if blinker_in != blinker_out {
                 use format::write::format_rle;
                 panic!("{}\n{}", format_rle(&blinker_in.block()),

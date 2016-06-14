@@ -81,6 +81,7 @@ impl<'a> Drop for CABlockCache<'a> {
 // Note: uncertain if default implementation of Debug is right
 #[derive(Debug)]
 pub struct HeapNode<'a> {
+    // corners[y][x]
     corners: [[Block<'a>; 2]; 2],
     hash: u64,
     evolve: Cache<Block<'a>>,
@@ -93,6 +94,8 @@ pub enum Block<'a> {
 }
 
 pub type Node<'a> = &'a HeapNode<'a>;
+// 01
+// 45
 pub type Leaf = u8;
 
 pub const LEAF_SIZE: usize = 2;
