@@ -42,13 +42,13 @@ impl<'a, 'b> Pattern<'a, 'b> {
         while self.block.depth() < depth_needed {
             self.encase();
         }
-        let reencase = encase(&self.hl, self.block);
+        let reencase = encase(self.hl, self.block);
         self.block = self.hl.step_pow2(reencase.unwrap_node(), lognsteps);
     }
 
     fn encase(&mut self) {
         let depth = self.block.depth();
-        self.block = encase(&self.hl, self.block);
+        self.block = encase(self.hl, self.block);
         self.dead_space += 1 << (depth-1);
     }
 
@@ -68,7 +68,7 @@ impl<'a, 'b> PartialEq for Pattern<'a, 'b> {
             swap(&mut a, &mut b);
         }
         while b.depth() > a.depth() {
-            a = encase(&self.hl, a);
+            a = encase(self.hl, a);
         }
         a == b
     }
@@ -100,7 +100,7 @@ mod test {
     use evolve::Hashlife;
 
     fn parse<'a, 'b>(hl: &'a Hashlife<'b>, bytes: &[u8]) -> Pattern<'a, 'b> {
-        Pattern::new(&hl, hl.block_from_bytes(bytes).unwrap())
+        Pattern::new(hl, hl.block_from_bytes(bytes).unwrap())
     }
 
     #[test]

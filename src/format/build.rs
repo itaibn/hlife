@@ -4,9 +4,9 @@ use std::ops::Range;
 
 use block::{Block, Leaf};
 use evolve::{Hashlife, LEAF_SIZE};
-use super::parse::{RLE, RLEToken, State};
+use super::parse::{RLE, RLEEncode, RLEToken, State};
 
-fn expand_rle<A:Clone>(rle: &[(usize, A)]) -> Vec<A> {
+fn expand_rle<A:Clone>(rle: &RLEEncode<A>) -> Vec<A> {
     use std::iter;
     rle.iter().flat_map(|&(n, ref t)| iter::repeat(t.clone()).take(n)).collect()
 }
@@ -35,7 +35,9 @@ fn tokens_to_matrix(tokens: &[RLEToken]) -> Result<Vec<Vec<State>>, ()> {
     Err(())
 }
 
-pub fn block_from_rle<'a>(hl: &Hashlife<'a>, rle: &RLE) -> Result<Block<'a>, ()> {
+pub fn block_from_rle<'a>(hl: &Hashlife<'a>, rle: &RLE) -> Result<Block<'a>,
+    ()> {
+
     use std::cmp::max;
 
     let mut matrix = try!(tokens_to_matrix(&expand_rle(rle)));
@@ -107,11 +109,11 @@ fn states_to_leaf(states: &[&[State]]) -> Leaf {
 #[test]
 fn test_expand_rle() {
     // Test with the look-and-say sequence
-    assert_eq!(expand_rle(&[(1, 1)]), vec![1]);
-    assert_eq!(expand_rle(&[(2, 1)]), vec![1, 1]);
-    assert_eq!(expand_rle(&[(1, 2), (1, 1)]), vec![2, 1]);
-    assert_eq!(expand_rle(&[(1, 1), (1, 2), (2, 1)]), vec![1, 2, 1, 1]);
-    assert_eq!(expand_rle(&[(3, 1), (2, 2), (1, 1)]), vec![1, 1, 1, 2, 2, 1]);
+    assert_eq!(expand_rle(&[(1, 1)]), [1]);
+    assert_eq!(expand_rle(&[(2, 1)]), [1, 1]);
+    assert_eq!(expand_rle(&[(1, 2), (1, 1)]), [2, 1]);
+    assert_eq!(expand_rle(&[(1, 1), (1, 2), (2, 1)]), [1, 2, 1, 1]);
+    assert_eq!(expand_rle(&[(3, 1), (2, 2), (1, 1)]), [1, 1, 1, 2, 2, 1]);
 }
 
 #[cfg(test)]
@@ -127,15 +129,15 @@ mod test {
 
         //let tokens0 = vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Alive),
         //    EndBlock];
-        let tokens0 = vec![(1, State(Dead)), (1, State(Alive)), (1, EndLine),
+        let tokens0 = [(1, State(Dead)), (1, State(Alive)), (1, EndLine),
             (1, State(Alive)), (1, EndBlock)];
         //let tokens1 = vec![Run(3, Alive), EndLine, EndLine, Run(1, Alive),
         //    EndBlock];
-        let tokens1 = vec![(3, State(Alive)), (1, EndLine), (1, EndLine), (1,
+        let tokens1 = [(3, State(Alive)), (1, EndLine), (1, EndLine), (1,
             State(Alive)), (1, EndBlock)];
-        let tokens2 = vec![(1, EndBlock)];
+        let tokens2 = [(1, EndBlock)];
         // From failed format::write test
-        let tokens3 = vec![(1, State(Dead)), (1, State(Dead)), (1, EndLine),
+        let tokens3 = [(1, State(Dead)), (1, State(Dead)), (1, EndLine),
             (1, State(Dead)), (1, State(Dead)), (1, EndBlock)];
 
         Hashlife::with_new(|hl| {
@@ -144,7 +146,7 @@ mod test {
                 [Block::Leaf(0x01), Block::Leaf(0x00)]]);
             assert_eq!(block_from_rle(&hl, &tokens1), Ok(Block::Node(node)));
             assert_eq!(block_from_rle(&hl, &tokens2), Ok(Block::Leaf(0x00)));
-            assert_eq!(block_from_rle(&hl, &vec![(1, EndLine), (1, EndBlock)]),
+            assert_eq!(block_from_rle(&hl, &[(1, EndLine), (1, EndBlock)]),
                 Ok(Block::Leaf(0x00)));
             assert_eq!(block_from_rle(&hl, &tokens3), Ok(Block::Leaf(0x00)));
         });

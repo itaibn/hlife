@@ -29,20 +29,20 @@ named!(parse_line<&[u8], LineParse>,
 
 // Temp type before I figure out the output of the parser
 pub type ParseOut = RLEOut;
-pub type RLEOut = RLE;
+pub type RLEOut = RLEBuf;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum LineParse {
     Comment(Comment),
     RLEMeta(RLEMeta),
-    RLELine(RLE),
+    RLELine(RLEBuf),
 }
 
 // TODO: Return error instead of panicking.
 fn process_lines(lines: Vec<LineParse>) -> ParseOut {
     // For now, assume the format is RLE
     let mut cur_meta: Option<Option<RLEMeta>> = None;
-    let mut cur_tokens: RLE = Vec::new();
+    let mut cur_tokens: RLEBuf = Vec::new();
 
     for line in lines {
         match line {
@@ -69,8 +69,10 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Comment;
 
+pub type RLEBuf = RLEEncodeBuf<RLEToken>;
 pub type RLE = RLEEncode<RLEToken>;
-pub type RLEEncode<A> = Vec<(usize, A)>;
+pub type RLEEncodeBuf<A> = Vec<(usize, A)>;
+pub type RLEEncode<A> = [(usize, A)];
 
 // TODO: Replace u64 by bignums
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -160,7 +162,7 @@ named!(opt_num<&[u8], usize>,
     map!(opt!(uint), |x: Option<u64>| x.unwrap_or(1) as usize)
 );
 
-named!(rle_line<&[u8], RLE>, many0!(tuple!(opt_num, rle_token)));
+named!(rle_line<&[u8], RLEBuf>, many0!(tuple!(opt_num, rle_token)));
 
 #[test]
 fn test_rle_line() {

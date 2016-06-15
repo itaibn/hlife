@@ -157,7 +157,7 @@ impl<'a> Block<'a> {
 
     pub fn unwrap_node(&self) -> &Node<'a> {
         if let Block::Node(ref n) = *self {
-            &n
+            n
         } else {
             panic!("unwrap_node: Not a node");
         }
@@ -166,7 +166,7 @@ impl<'a> Block<'a> {
     // Will probably be moved
     pub fn depth(&self) -> usize {
         let mut count = 0;
-        let mut block: &Block = &self;
+        let mut block: &Block = self;
         while let Block::Node(ref n) = *block {
             block = &n.corners[0][0];
             count += 1;
@@ -191,7 +191,7 @@ impl<'a> fmt::Debug for Block<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use format::write::format_rle;
         
-        let as_string = format_rle(&self);
+        let as_string = format_rle(self);
         write!(f, "{}", as_string)
     }
 }

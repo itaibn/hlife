@@ -16,7 +16,7 @@ impl<'a> Hashlife<'a> {
         with_newline.push(b'\n');
 
         if let IResult::Done(_, tokens) = parse_file(&with_newline) {
-            block_from_rle(&self, &tokens)
+            block_from_rle(self, &tokens)
         } else {
             Err(())
         }
