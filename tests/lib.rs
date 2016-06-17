@@ -23,8 +23,9 @@ fn test_global_instances() {
 
     Hashlife::with_new(|hl| {
         for n in 0..TEST_INSTANCES {
-            let in_bytes = read_file(&format!("tests/in{:03}.rle", n)).unwrap();
-            let out_bytes = read_file(&format!("tests/out{:03}.rle",
+            let in_bytes = read_file(&format!("instances/in{:03}.rle",
+                n)).unwrap();
+            let out_bytes = read_file(&format!("instances/out{:03}.rle",
                 n)).unwrap();
             let in_block = hl.block_from_bytes(&in_bytes).unwrap();
             let out_block = hl.block_from_bytes(&out_bytes).unwrap();
