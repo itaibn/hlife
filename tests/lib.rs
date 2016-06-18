@@ -15,8 +15,8 @@ fn read_file(path: &str) -> io::Result<Vec<u8>> {
 
 #[test]
 fn test_global_instances() {
-    const TEST_INSTANCES: usize = 1;
-    const TEST_TIMES: [usize; TEST_INSTANCES] = [1];
+    const TEST_INSTANCES: usize = 2;
+    const TEST_TIMES: [usize; TEST_INSTANCES] = [1, 175];
 
 //    println!("Current dir: {}",
 //        fs::canonicalize(".").unwrap().to_str().unwrap());
