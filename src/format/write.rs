@@ -1,9 +1,9 @@
 use block::{Block, Leaf, LEAF_SIZE};
-use super::parse::{RLEToken, State};
+use super::parse::{RLEToken, RLEBuf, State};
 
 pub fn format_rle(block: &Block) -> String {
     let len = LEAF_SIZE << block.depth();
-    tokens_to_string(len, len, matrix_to_tokens(block_to_matrix(block)))
+    matrix_to_string(len, len, block_to_matrix(block))
 }
 
 fn block_to_matrix(block: &Block) -> Vec<Vec<State>> {
@@ -52,6 +52,40 @@ fn merge_columns<A>(left: Vec<Vec<A>>, right: Vec<Vec<A>>) -> Vec<Vec<A>> {
         }).collect()
 }
 
+fn matrix_to_rle(matrix: Vec<Vec<State>>) -> RLEBuf {
+    let mut res: RLEBuf = Vec::new();
+    let mut blank_lines = 0;
+    for line in matrix {
+        let mut run_val = State::Dead;
+        let mut run_len = 0;
+        let mut line_blank = true;
+        for state in line {
+            if state == run_val {
+                run_len += 1;
+            } else {
+                if line_blank && blank_lines > 0 {
+                    res.push((blank_lines, RLEToken::EndLine));
+                    blank_lines = 1;
+                    line_blank = false;
+                }
+                if run_len > 0 {
+                    res.push((run_len, RLEToken::State(run_val)));
+                }
+                run_val = state;
+                run_len = 1;
+            }
+        }
+        if run_val != State::Dead {
+            res.push((run_len, RLEToken::State(run_val)));
+        }
+        if line_blank {
+            blank_lines += 1;
+        }
+    }
+    res.push((1, RLEToken::EndBlock));
+    res
+}
+
 fn matrix_to_tokens(matrix: Vec<Vec<State>>) -> Vec<RLEToken> {
     let mut res = Vec::new();
     let len = matrix.len();
@@ -62,7 +96,7 @@ fn matrix_to_tokens(matrix: Vec<Vec<State>>) -> Vec<RLEToken> {
     res
 }
 
-fn tokens_to_string(x: usize, y: usize, tokens: Vec<RLEToken>) -> String {
+fn matrix_to_string(x: usize, y: usize, tokens: Vec<Vec<State>>) -> String {
     fn token_len_to_string(len: usize, token: RLEToken) -> String {
         let mut res = if len == 1 {String::new()} else {len.to_string()};
         res.push(match token {
@@ -74,7 +108,7 @@ fn tokens_to_string(x: usize, y: usize, tokens: Vec<RLEToken>) -> String {
         res
     }
 
-    let rle_compressed = rle_compress(tokens);
+    let rle_compressed = matrix_to_rle(tokens);
 
     let mut res = format!("x = {}, y = {}, rule = B3/S23\n", x, y);
     let mut line_len = 0;
@@ -150,10 +184,10 @@ mod test {
             let mut bc = hl.block_cache();
             let b0 = Block::Leaf(0x03);
             assert_eq!(format_rle(&b0),
-                "x = 2, y = 2, rule = B3/S23\n2o$2b!\n");
+                "x = 2, y = 2, rule = B3/S23\n2o!\n");
             let b1 = Block::Node(bc.node([[b0, b0], [b0, b0]]));
             assert_eq!(format_rle(&b1),
-                "x = 4, y = 4, rule = B3/S23\n4o$4b$4o$4b!\n");
+                "x = 4, y = 4, rule = B3/S23\n4o2$4o!\n");
         });
     }
 }
