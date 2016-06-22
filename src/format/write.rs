@@ -86,16 +86,6 @@ fn matrix_to_rle(matrix: Vec<Vec<State>>) -> RLEBuf {
     res
 }
 
-fn matrix_to_tokens(matrix: Vec<Vec<State>>) -> Vec<RLEToken> {
-    let mut res = Vec::new();
-    let len = matrix.len();
-    for (i, row) in matrix.into_iter().enumerate() {
-        res.extend(row.into_iter().map(RLEToken::State));
-        res.push(if i+1 < len {RLEToken::EndLine} else {RLEToken::EndBlock});
-    }
-    res
-}
-
 fn rle_to_string(x: usize, y: usize, rle: RLEBuf) -> String {
     fn token_len_to_string(len: usize, token: RLEToken) -> String {
         let mut res = if len == 1 {String::new()} else {len.to_string()};
@@ -125,30 +115,6 @@ fn rle_to_string(x: usize, y: usize, rle: RLEBuf) -> String {
     }
 
     res
-}
-
-fn rle_compress<A:Eq>(tokens: Vec<A>) -> Vec<(usize, A)> {
-    let mut res = Vec::new();
-    let mut prev_: Option<A> = None;
-    let mut count = 0;
-
-    for token in tokens {
-        if prev_.as_ref() == Some(&token) {
-            count += 1;
-        } else {
-            prev_.map(|prev| res.push((count, prev)));
-            prev_ = Some(token);
-            count = 1;
-        }
-    }
-    prev_.map(|prev| res.push((count, prev)));
-    res
-}
-
-#[test]
-fn test_rle_compress() {
-    assert_eq!(rle_compress(vec![1; 5]), vec![(5, 1)]);
-    assert_eq!(rle_compress(vec![1, 2, 1, 1]), vec![(1, 1), (1, 2), (2, 1)]);
 }
 
 #[cfg(test)]
