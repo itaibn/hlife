@@ -3,7 +3,7 @@ use super::parse::{RLEToken, RLEBuf, State};
 
 pub fn format_rle(block: &Block) -> String {
     let len = LEAF_SIZE << block.depth();
-    matrix_to_string(len, len, block_to_matrix(block))
+    rle_to_string(len, len, matrix_to_rle(block_to_matrix(block)))
 }
 
 fn block_to_matrix(block: &Block) -> Vec<Vec<State>> {
@@ -96,7 +96,7 @@ fn matrix_to_tokens(matrix: Vec<Vec<State>>) -> Vec<RLEToken> {
     res
 }
 
-fn matrix_to_string(x: usize, y: usize, tokens: Vec<Vec<State>>) -> String {
+fn rle_to_string(x: usize, y: usize, rle: RLEBuf) -> String {
     fn token_len_to_string(len: usize, token: RLEToken) -> String {
         let mut res = if len == 1 {String::new()} else {len.to_string()};
         res.push(match token {
@@ -108,12 +108,10 @@ fn matrix_to_string(x: usize, y: usize, tokens: Vec<Vec<State>>) -> String {
         res
     }
 
-    let rle_compressed = matrix_to_rle(tokens);
-
     let mut res = format!("x = {}, y = {}, rule = B3/S23\n", x, y);
     let mut line_len = 0;
 
-    for (len, token) in rle_compressed {
+    for (len, token) in rle {
         let token_string = token_len_to_string(len, token);
         if line_len + token_string.len() > 79 {
             res.push('\n');
