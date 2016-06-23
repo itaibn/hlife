@@ -10,4 +10,6 @@ clippy_pedantic = ["clippy"]
 
 [dependencies]
 nom = "1.2.0"
+rand = "0.3"
+
 clippy = {version = "*", optional = true}

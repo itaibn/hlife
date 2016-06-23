@@ -10,6 +10,7 @@
 
 #[macro_use]
 extern crate nom;
+extern crate rand;
 
 pub mod evolve;
 pub mod format;

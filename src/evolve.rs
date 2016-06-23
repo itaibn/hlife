@@ -1,6 +1,8 @@
 use std::cell::{RefCell, RefMut};
 use std::fmt;
 
+use rand;
+
 pub use block::{Leaf, LEAF_SIZE};
 use block::{Block as RawBlock, Node as RawNode, CABlockCache};
 
@@ -26,14 +28,14 @@ struct Node<'a> {
 */
 
 // TODO: Incorporate into rest of this code
-pub fn make_2x2<A,F>(func: F) -> [[A; 2]; 2]
-    where F : Fn(usize, usize) -> A {
+pub fn make_2x2<A,F>(mut func: F) -> [[A; 2]; 2]
+    where F : FnMut(usize, usize) -> A {
     
     [[func(0, 0), func(0, 1)], [func(1, 0), func(1, 1)]]
 }
 
-pub fn make_3x3<A,F>(func: F) -> [[A; 3]; 3]
-    where F : Fn(usize, usize) -> A {
+pub fn make_3x3<A,F>(mut func: F) -> [[A; 3]; 3]
+    where F : FnMut(usize, usize) -> A {
 
     [[func(0, 0), func(0, 1), func(0, 2)],
      [func(1, 0), func(1, 1), func(1, 2)],
@@ -249,6 +251,18 @@ impl<'a> Hashlife<'a> {
                 let around = self.node(make_2x2(|j, i| parts[x+i][y+j]));
                 self.step_pow2(around, lognsteps)
             }))
+        }
+    }
+
+    pub fn random_block<R:rand::Rng>(&self, rng: &mut R, depth: usize) ->
+        RawBlock<'a> {
+
+        if depth == 0 {
+            use block::LEAF_MASK;
+            let leaf = rng.gen::<Leaf>() & LEAF_MASK;
+            RawBlock::Leaf(leaf)
+        } else {
+            self.node_block(make_2x2(|_,_| self.random_block(rng, depth-1)))
         }
     }
 }
