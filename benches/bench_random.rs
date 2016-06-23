@@ -26,6 +26,11 @@ fn bench_random_depth_4(b: &mut Bencher) {
     bench_random_at_depth(4, b);
 }
 
+#[bench]
+fn bench_random_depth_6(b: &mut Bencher) {
+    bench_random_at_depth(6, b);
+}
+
 #[ignore]
 #[bench]
 fn bench_random_depth_8(b: &mut Bencher) {

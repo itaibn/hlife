@@ -18,6 +18,7 @@ fn read_file(path: &str) -> io::Result<Vec<u8>> {
     Ok(buf)
 }
 
+#[ignore]
 #[bench]
 fn bench_global_instances(b: &mut Bencher) {
     const TEST_INSTANCES: usize = 2;
