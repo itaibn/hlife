@@ -9,6 +9,7 @@ default = []
 clippy_pedantic = ["clippy"]
 
 [dependencies]
+fnv = "1.0.2"
 nom = "1.2.0"
 rand = "0.3"
 

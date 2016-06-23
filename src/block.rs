@@ -4,7 +4,9 @@ use cache::Cache;
 
 use std::collections::HashMap;
 use std::fmt;
-use std::hash::{Hash, Hasher, SipHasher};
+use std::hash::{Hash, Hasher};
+
+use fnv::FnvHasher;
 
 // [Currently these notes are out of date.]
 // NOTE ON OWNERSHIP AND SAFETY:
@@ -139,10 +141,9 @@ impl<'a> Hash for HeapNode<'a> {
     }
 }
 
-// Copied from std::hash documentation.
-// TODO: Find something quicker then SipHash
+// Copied from std::hash documentation, with modification.
 fn hash<T: Hash>(t: &T) -> u64 {
-    let mut s = SipHasher::new();
+    let mut s = FnvHasher::default();
     t.hash(&mut s);
     s.finish()
 }

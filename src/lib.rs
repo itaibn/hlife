@@ -8,6 +8,7 @@
 #![cfg_attr(all(feature="clippy", not(feature="clippy_pedantic")),
     allow(needless_range_loop))]
 
+extern crate fnv;
 #[macro_use]
 extern crate nom;
 extern crate rand;
