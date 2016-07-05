@@ -44,35 +44,50 @@ enum LineParse {
 
 // TODO: Return error instead of panicking.
 fn process_lines(lines: Vec<LineParse>) -> ParseOut {
-    // For now, assume the format is RLE
-    let mut cur_meta: Option<Option<RLEMeta>> = None;
-    let mut cur_tokens: RLEBuf = Vec::new();
+    use self::LineParse as LP;
+    //use self::process_lines::PS::*;
+
+    // Parse State. Short name to make pattern matching more convenient.
+    enum PS {
+        Start,
+        RLE(Option<RLEMeta>, RLEBuf),
+        MC(MCHeader, Vec<MCLine>),
+    }
+    
+    let mut parse_state = PS::Start;
 
     for line in lines {
-        match line {
-            LineParse::Comment(_) => {},
-            LineParse::RLEMeta(ref meta) => {
-                if cur_meta.is_some() {
-                    // "RLE metainformation in inappropiate location"
-                    return Err(());
-                } else {
-                    cur_meta = Some(Some(meta.clone()));
-                }
+        parse_state = match (parse_state, line) {
+            (ps, LP::Comment(_)) => {ps},
+            (PS::Start, LP::RLEMeta(meta)) => {
+                PS::RLE(Some(meta), Vec::new())
             }
-            LineParse::RLELine(ref tokens) => {    
-                // Make clippy happy, and use or_else instead of or
-                cur_meta = cur_meta.or_else(|| Some(None));
-                cur_tokens.extend_from_slice(tokens);
+            (PS::Start, LP::RLELine(tokens)) => {    
+                PS::RLE(None, tokens)
             }
-            LineParse::MCHeader(_) | LineParse::MCLine(_) => {
-                // ".mc format not implemented"
+            (PS::Start, LP::MCHeader(header)) => {
+                PS::MC(header, Vec::new())
+            }
+            (PS::RLE(m, mut cur_tokens), LP::RLELine(tokens)) => {
+                cur_tokens.extend_from_slice(&tokens);
+                PS::RLE(m, cur_tokens)
+            }
+            (PS::MC(h, mut lines), LP::MCLine(line)) => {
+                lines.push(line);
+                PS::MC(h, lines)
+            }
+            _ => {
+                // Inappropiate line
                 return Err(())
             }
         }
     }
 
-    // Turn tokens to output.
-    Ok(cur_tokens)
+    if let PS::RLE(_, tokens) = parse_state {
+        Ok(tokens)
+    } else {
+        Err(())
+    }
 }
 
 named!(uint<&[u8], u64>,
