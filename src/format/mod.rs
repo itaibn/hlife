@@ -7,7 +7,7 @@ use block::Block;
 
 impl<'a> Hashlife<'a> {
     pub fn block_from_bytes(&self, bytes: &[u8]) -> Result<Block<'a>, ()> {
-        use self::parse::parse_file;
+        use self::parse::{parse_file, ParseOut};
         use self::build::block_from_rle;
         use nom::IResult;
 
@@ -15,7 +15,8 @@ impl<'a> Hashlife<'a> {
         let mut with_newline = bytes.to_vec();
         with_newline.push(b'\n');
 
-        if let IResult::Done(_, Ok(tokens)) = parse_file(&with_newline) {
+        if let IResult::Done(_, ParseOut::RLE(tokens)) =
+                parse_file(&with_newline) {
             block_from_rle(self, &tokens)
         } else {
             Err(())
