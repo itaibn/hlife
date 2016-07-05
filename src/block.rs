@@ -1,12 +1,17 @@
 //! Low-level code for the creation and handling of blocks
 
-use cache::Cache;
-
 use std::collections::HashMap;
 use std::fmt;
-use std::hash::{Hash, Hasher};
+use std::hash::{BuildHasherDefault, Hash, Hasher};
 
 use fnv::FnvHasher;
+
+use cache::Cache;
+
+#[cfg(feature = "xor_hasher")]
+use self::xor_hasher::XorHasherBuilder as HashmapState;
+#[cfg(not(feature = "xor_hasher"))]
+use std::collections::hash_map::RandomState as HashmapState;
 
 // [Currently these notes are out of date.]
 // NOTE ON OWNERSHIP AND SAFETY:
@@ -29,7 +34,7 @@ use fnv::FnvHasher;
 /// Lifetime parameter indicates the lifetime of all the blocks stored therein;
 /// Note that all the blocks are owned are owned by `CABlockCache`; the nodes
 /// themselves only contain references to one another (with lifetime 'a).
-pub struct CABlockCache<'a> (HashMap<u64, Box<HeapNode<'a>>>);
+pub struct CABlockCache<'a> (HashMap<u64, Box<HeapNode<'a>>, HashmapState>);
 
 impl<'a> CABlockCache<'a> {
     /// Create a new `CABlockCache` and pass it to `f`.
@@ -48,7 +53,8 @@ impl<'a> CABlockCache<'a> {
     pub fn with_new<F, T>(f: F) -> T
         where F: for<'b> FnOnce(CABlockCache<'b>) -> T {
 
-        let ca_block_cache = CABlockCache(HashMap::new());
+        let ca_block_cache = CABlockCache(HashMap::with_hasher(
+            HashmapState::default()));
         f(ca_block_cache)
     }
 
@@ -195,6 +201,43 @@ impl<'a> fmt::Debug for Block<'a> {
         
         let as_string = format_rle(self);
         write!(f, "{}", as_string)
+    }
+}
+
+/// The current hashtable implementation uses a `HashMap` to stored the nodes,
+/// indexed by hashes of the nodes. This means that to look up a given node in
+/// the hashtable, that node is hashed twice, first to find the index in the
+/// hashtable, and second to search that index in the HashMap itself. Since the
+/// second hash isn't contributing anything, we optionally implement a hasher
+/// that does close to nothing to its input to make it more efficient.
+#[cfg(feature = "xor_hasher")]
+mod xor_hasher {
+    use std::hash::{Hasher, BuildHasherDefault};
+
+    pub struct XorHasher(u64);
+
+    pub type XorHasherBuilder = BuildHasherDefault<XorHasher>;
+
+    impl Default for XorHasher {
+        fn default() -> Self {
+            XorHasher(0)
+        }
+    }
+
+    impl Hasher for XorHasher {
+        fn finish(&self) -> u64 {
+            self.0
+        }
+
+        fn write(&mut self, bytes: &[u8]) {
+            for chunk in bytes.chunks(8) {
+                let mut shift = 0;
+                for &byte in chunk {
+                    self.0 ^= (byte as u64) << shift;
+                    shift += 8;
+                }
+            }
+        }
     }
 }
 
