@@ -21,7 +21,8 @@ named!(parse_line<&[u8], LineParse>,
               map!(comment, LineParse::Comment)
             | map!(rle_meta, LineParse::RLEMeta)
             | map!(rle_line, LineParse::RLELine)
-            | map!(mc_header, |_| LineParse::MCHeader)
+            | map!(mc_header, LineParse::MCHeader)
+            | map!(mc_line, LineParse::MCLine)
         )
         ~ line_ending,
         || out
@@ -37,7 +38,8 @@ enum LineParse {
     Comment(Comment),
     RLEMeta(RLEMeta),
     RLELine(RLEBuf),
-    MCHeader,
+    MCHeader(MCHeader),
+    MCLine(MCLine),
 }
 
 // TODO: Return error instead of panicking.
@@ -62,7 +64,7 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
                 cur_meta = cur_meta.or_else(|| Some(None));
                 cur_tokens.extend_from_slice(tokens);
             }
-            LineParse::MCHeader => {
+            LineParse::MCHeader(_) | LineParse::MCLine(_) => {
                 // ".mc format not implemented"
                 return Err(())
             }
@@ -160,16 +162,65 @@ named!(rle_token<&[u8], RLEToken>,
     )
 );
 
+// FIXME: potential truncation with "as" 
 named!(opt_num<&[u8], usize>,
     map!(opt!(uint), |x: Option<u64>| x.unwrap_or(1) as usize)
 );
 
 named!(rle_line<&[u8], RLEBuf>, many0!(tuple!(opt_num, rle_token)));
 
-named!(mc_header<&[u8], ()>,
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct MCHeader;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MCLine {
+    Leaf(MCLeaf),
+    Node(MCNode),
+}
+
+pub type MCLeaf = Vec<Vec<State>>;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MCNode(pub usize, pub usize, pub usize, pub usize, pub usize);
+
+named!(mc_header<&[u8], MCHeader>,
     map!(
         tuple!(tag!("[M2]"), not_line_ending),
-        |_| ()
+        |_| MCHeader
+    )
+);
+
+named!(mc_line<&[u8], MCLine>,
+    alt!(
+        map!(mc_leaf, MCLine::Leaf) |
+        map!(mc_node, MCLine::Node)
+    )
+);
+
+named!(mc_leaf<&[u8], MCLeaf>,
+    many0!(map!(
+        tuple!(
+            many0!(alt!(
+                map!(tag!("."), |_| State::Dead) |
+                map!(tag!("*"), |_| State::Alive)
+            )),
+            // The way this is written every row must end with "$" to be parsed
+            // correctly, which I'm pretty sure is correct.
+            tag!("$")
+        ), |(row, _)| row
+    ))
+);
+
+// FIXME: potential truncation with "as" 
+named!(mc_node<&[u8], MCNode>,
+    chain!(
+        d: uint ~ space ~
+        b0: uint ~ space ~
+        b1: uint ~ space ~
+        b2: uint ~ space ~
+        b3: uint ~ space,
+        || MCNode(d as usize, b0 as usize, b1 as usize, b2 as usize, b3 as
+            usize)
     )
 );
 
