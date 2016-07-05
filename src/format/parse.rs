@@ -21,6 +21,7 @@ named!(parse_line<&[u8], LineParse>,
               map!(comment, LineParse::Comment)
             | map!(rle_meta, LineParse::RLEMeta)
             | map!(rle_line, LineParse::RLELine)
+            | map!(mc_header, |_| LineParse::MCHeader)
         )
         ~ line_ending,
         || out
@@ -36,6 +37,7 @@ enum LineParse {
     Comment(Comment),
     RLEMeta(RLEMeta),
     RLELine(RLEBuf),
+    MCHeader,
 }
 
 // TODO: Return error instead of panicking.
@@ -58,6 +60,9 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
                 // Make clippy happy, and use or_else instead of or
                 cur_meta = cur_meta.or_else(|| Some(None));
                 cur_tokens.extend_from_slice(tokens);
+            }
+            LineParse::MCHeader => {
+                unimplemented!()
             }
         }
     }
@@ -158,6 +163,13 @@ named!(opt_num<&[u8], usize>,
 );
 
 named!(rle_line<&[u8], RLEBuf>, many0!(tuple!(opt_num, rle_token)));
+
+named!(mc_header<&[u8], ()>,
+    map!(
+        tuple!(tag!("[M2]"), not_line_ending),
+        |_| ()
+    )
+);
 
 #[test]
 fn test_rle_line() {
