@@ -66,8 +66,23 @@ fn process_lines(lines: Vec<LineParse>) -> ParseOut {
     cur_tokens
 }
 
+named!(uint<&[u8], u64>,
+    map_res!(
+        digit,
+        // `unwrap` should never panic since `digit` only accepts ASCII
+        // characters.
+        |x| u64::from_str(str::from_utf8(x).unwrap())
+    )
+);
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Comment;
+
+named!(comment<&[u8], Comment>,
+    map!(tuple!(space, opt!(tuple!(tag!("#"), not_line_ending))),
+        |_| Comment
+    )
+);
 
 pub type RLEBuf = RLEEncodeBuf<RLEToken>;
 pub type RLE = RLEEncode<RLEToken>;
@@ -92,21 +107,6 @@ pub enum RLEToken {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum State {Dead, Alive}
-
-named!(uint<&[u8], u64>,
-    map_res!(
-        digit,
-        // `unwrap` should never panic since `digit` only accepts ASCII
-        // characters.
-        |x| u64::from_str(str::from_utf8(x).unwrap())
-    )
-);
-
-named!(comment<&[u8], Comment>,
-    map!(tuple!(space, opt!(tuple!(tag!("#"), not_line_ending))),
-        |_| Comment
-    )
-);
 
 named!(rle_meta<&[u8], RLEMeta>,
     chain!(
