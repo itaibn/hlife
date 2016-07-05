@@ -1,7 +1,7 @@
 
 use block::Block;
 use evolve::*;
-use util::log2_upper;
+use util::{log2_upper, make_2x2};
 
 #[derive(Debug)]
 pub struct Pattern<'a, 'b:'a> {

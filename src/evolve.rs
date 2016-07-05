@@ -5,6 +5,7 @@ use rand;
 
 pub use block::{Leaf, LEAF_SIZE};
 use block::{Block as RawBlock, Node as RawNode, CABlockCache};
+use util::{make_2x2, make_3x3};
 
 pub struct Hashlife<'a> {
     table: RefCell<CABlockCache<'a>>,
@@ -26,21 +27,6 @@ struct Node<'a> {
     depth: usize,
 }
 */
-
-// TODO: Incorporate into rest of this code
-pub fn make_2x2<A,F>(mut func: F) -> [[A; 2]; 2]
-    where F : FnMut(usize, usize) -> A {
-    
-    [[func(0, 0), func(0, 1)], [func(1, 0), func(1, 1)]]
-}
-
-pub fn make_3x3<A,F>(mut func: F) -> [[A; 3]; 3]
-    where F : FnMut(usize, usize) -> A {
-
-    [[func(0, 0), func(0, 1), func(0, 2)],
-     [func(1, 0), func(1, 1), func(1, 2)],
-     [func(2, 0), func(2, 1), func(2, 2)]]
-}
 
 fn mk_small_evolve_cache() -> [u8; 1<<16] {
     let mut res = [0; 1<<16];
