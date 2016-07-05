@@ -138,17 +138,12 @@ named!(rle_meta<&[u8], RLEMeta>,
     )
 );
 
-fn rle_cell_state(input: &[u8]) -> IResult<&[u8], State> {
-    if input.len() == 0 {
-        IResult::Incomplete(Needed::Size(1))
-    } else {
-        match input[0] {
-            b'b' => IResult::Done(&input[1..], State::Dead),
-            b'o' => IResult::Done(&input[1..], State::Alive),
-            _ => IResult::Error(Err::Position(ErrorKind::Tag, input)),
-        }
-    }
-}
+named!(rle_cell_state<&[u8], State>,
+    alt!(
+        map!(tag!("b"), |_| State::Dead) |
+        map!(tag!("o"), |_| State::Alive)
+    )
+);
 
 named!(rle_token<&[u8], RLEToken>,
     alt!(
