@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use std::fmt;
-use std::hash::{BuildHasherDefault, Hash, Hasher};
+use std::hash::{Hash, Hasher};
 
 use fnv::FnvHasher;
 
@@ -207,9 +207,9 @@ impl<'a> fmt::Debug for Block<'a> {
 /// The current hashtable implementation uses a `HashMap` to stored the nodes,
 /// indexed by hashes of the nodes. This means that to look up a given node in
 /// the hashtable, that node is hashed twice, first to find the index in the
-/// hashtable, and second to search that index in the HashMap itself. Since the
-/// second hash isn't contributing anything, we optionally implement a hasher
-/// that does close to nothing to its input to make it more efficient.
+/// hashtable, and second to search that index in the `HashMap` itself. Since
+/// the second hash isn't contributing anything, we optionally implement a
+/// hasher that does close to nothing to its input to make it more efficient.
 #[cfg(feature = "xor_hasher")]
 mod xor_hasher {
     use std::hash::{Hasher, BuildHasherDefault};
