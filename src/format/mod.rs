@@ -15,7 +15,7 @@ impl<'a> Hashlife<'a> {
         let mut with_newline = bytes.to_vec();
         with_newline.push(b'\n');
 
-        if let IResult::Done(_, tokens) = parse_file(&with_newline) {
+        if let IResult::Done(_, Ok(tokens)) = parse_file(&with_newline) {
             block_from_rle(self, &tokens)
         } else {
             Err(())
@@ -37,5 +37,7 @@ fn test_block_from_bytes() {
         assert_eq!(hl.block_from_bytes(longer_test), Ok(Block::Leaf(0)));
         // Test RLE lacking ending '!'
         assert_eq!(hl.block_from_bytes(b"3o"), Err(()));
+        let double_header = b"x=2,y=2,rule=B3/S23\nx=2,y=2,rule=B3/S23\nbb$bb!";
+        assert_eq!(hl.block_from_bytes(double_header), Err(()));
     });
 }
