@@ -1,5 +1,6 @@
 pub mod parse;
-pub mod build;
+mod build_rle;
+mod build_mc;
 pub mod write;
 
 use evolve::Hashlife;
@@ -8,7 +9,7 @@ use block::Block;
 impl<'a> Hashlife<'a> {
     pub fn block_from_bytes(&self, bytes: &[u8]) -> Result<Block<'a>, ()> {
         use self::parse::{parse_file, ParseOut};
-        use self::build::block_from_rle;
+        use self::build_rle::block_from_rle;
         use nom::IResult;
 
         // TODO: Do this with less copying.
