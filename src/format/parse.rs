@@ -197,7 +197,7 @@ pub enum MCLine {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MCLeaf(Vec<Vec<State>>);
+pub struct MCLeaf(pub Vec<Vec<State>>);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MCNode(pub usize, pub usize, pub usize, pub usize, pub usize);

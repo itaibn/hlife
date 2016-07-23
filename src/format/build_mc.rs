@@ -1,8 +1,8 @@
-use block::Block;
+use block::{Block, LEAF_SIZE};
 use evolve::Hashlife;
 use util::make_2x2;
 
-use super::parse::{MCLine, MCLeaf, MCNode};
+use super::parse::{State, MCLine, MCLeaf, MCNode};
 
 pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
     ()> {
@@ -18,7 +18,8 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
                         {(0,0) => b0, (0,1) => b1, (1,0) => b2, (1,1) => b3,
                          _ => unreachable!()};
                     if index == 0 {
-                        hl.blank(d)
+                        debug_assert!(LEAF_SIZE == 2);
+                        hl.blank(d-2)
                     } else {
                         //*try!(table.get(index-1).ok_or(()))
                         table[index-1]
@@ -31,6 +32,16 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
     table.last().cloned().ok_or(())
 }
 
-fn build_mc_leaf<'a>(_: &Hashlife<'a>, _: &MCLeaf) -> Block<'a> {
-    unimplemented!()
+fn build_mc_leaf<'a>(hl: &Hashlife<'a>, leaf: &MCLeaf) -> Block<'a> {
+    use super::build_rle::block_from_matrix;
+
+    debug_assert!(LEAF_SIZE == 2);
+
+    let full_leaf = leaf.0.iter().map(|row| {
+        let mut new_row = row.clone();
+        new_row.resize(8, State::Dead);
+        new_row
+    }).collect::<Vec<_>>();
+    let matrix = full_leaf.iter().map(|row| &**row).collect();
+    block_from_matrix(hl, 2, matrix)
 }

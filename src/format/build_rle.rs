@@ -58,8 +58,8 @@ pub fn block_from_rle<'a>(hl: &Hashlife<'a>, rle: &RLE) -> Result<Block<'a>,
     Ok(block_from_matrix(hl, res_depth, matrix))
 }
 
-fn block_from_matrix<'a>(hl: &Hashlife<'a>, depth: u32, matrix: Vec<&[State]>)
-    -> Block<'a> {
+pub fn block_from_matrix<'a>(hl: &Hashlife<'a>, depth: u32, matrix:
+    Vec<&[State]>) -> Block<'a> {
 
     assert_eq!(matrix.len(), LEAF_SIZE << depth);
     for row in &matrix {assert_eq!(row.len(), LEAF_SIZE << depth);}
