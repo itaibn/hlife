@@ -18,11 +18,11 @@ named!(pub parse_file<&[u8], ParseOut>,
 named!(parse_line<&[u8], LineParse>,
     chain!(
         out: alt!(
-              map!(comment, LineParse::Comment)
+              map!(mc_header, LineParse::MCHeader)
             | map!(rle_meta, LineParse::RLEMeta)
             | map!(rle_line, LineParse::RLELine)
-            | map!(mc_header, LineParse::MCHeader)
             | map!(mc_line, LineParse::MCLine)
+            | map!(comment, LineParse::Comment)
         )
         ~ line_ending,
         || out
@@ -106,7 +106,7 @@ named!(uint<&[u8], u64>,
 struct Comment;
 
 named!(comment<&[u8], Comment>,
-    map!(tuple!(space, opt!(tuple!(tag!("#"), not_line_ending))),
+    map!(tuple!(opt!(space), opt!(tuple!(tag!("#"), not_line_ending))),
         |_| Comment
     )
 );
@@ -185,7 +185,7 @@ named!(opt_num<&[u8], usize>,
     map!(opt!(uint), |x: Option<u64>| x.unwrap_or(1) as usize)
 );
 
-named!(rle_line<&[u8], RLEBuf>, many0!(tuple!(opt_num, rle_token)));
+named!(rle_line<&[u8], RLEBuf>, many1!(tuple!(opt_num, rle_token)));
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct MCHeader;
@@ -196,14 +196,15 @@ pub enum MCLine {
     Node(MCNode),
 }
 
-pub type MCLeaf = Vec<Vec<State>>;
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MCLeaf(Vec<Vec<State>>);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MCNode(pub usize, pub usize, pub usize, pub usize, pub usize);
 
 named!(mc_header<&[u8], MCHeader>,
     map!(
-        tuple!(tag!("[M2]"), not_line_ending),
+        tuple!(tag!("[M2]"), opt!(not_line_ending)),
         |_| MCHeader
     )
 );
@@ -216,7 +217,7 @@ named!(mc_line<&[u8], MCLine>,
 );
 
 named!(mc_leaf<&[u8], MCLeaf>,
-    many0!(map!(
+    map!(many_m_n!(8, 8, map!(
         tuple!(
             many0!(alt!(
                 map!(tag!("."), |_| State::Dead) |
@@ -226,7 +227,7 @@ named!(mc_leaf<&[u8], MCLeaf>,
             // correctly, which I'm pretty sure is correct.
             tag!("$")
         ), |(row, _)| row
-    ))
+    )), MCLeaf)
 );
 
 // FIXME: potential truncation with "as" 
@@ -288,6 +289,8 @@ fn test_parse_rle_meta() {
 
 #[test]
 fn test_parse_line() {
+    use self::State::*;
+
     assert_parse!(b"x=1,y=1,rule=B3/S23\n" => parse_line,
         LineParse::RLEMeta(RLEMeta {x: 1, y: 1}));
     assert_parse!(b"3bo\n" => parse_line, 
@@ -297,6 +300,11 @@ fn test_parse_line() {
             RLEToken::State(State::Alive))])
     );
     assert_parse!(b" #  Comment!\n" => parse_line, LineParse::Comment(Comment));
+    assert_parse!(b"[M2]\n" => parse_line, LineParse::MCHeader(MCHeader));
+    assert_parse!(b".*$..*$***$$$$$$\n" => parse_line,
+        LineParse::MCLine(MCLine::Leaf(MCLeaf(
+        vec![vec![Dead, Alive], vec![Dead, Dead, Alive], vec![Alive, Alive,
+        Alive], vec![], vec![], vec![], vec![], vec![]]))));
 }
 
 #[test]
@@ -337,4 +345,32 @@ fn test_parse_file() {
     assert_parse!(b"x = 2, y = 2, rule = B3/S23\nbb$bb$!\n" => parse_file,
         RLE(vec![(1, State(Dead)), (1, State(Dead)), (1, EndLine), (1,
             State(Dead)), (1, State(Dead)), (1, EndLine), (1, EndBlock)]));
+}
+
+#[test]
+fn test_comment() {
+    assert_parse!(b"" => comment, Comment);
+    assert_parse!(b"\n" => parse_line, LineParse::Comment(Comment));
+}
+
+#[test]
+fn debug() {
+    assert_parse!(b"[M2]" => mc_header, MCHeader);
+    assert_parse!(b"[M2]\n" => parse_line, LineParse::MCHeader(MCHeader));
+
+    named!(rle_or_mc<u8>, alt!(map!(rle_line, |_| 0) | map!(mc_leaf, |_| 1)));
+    assert_parse!(b"3b" => rle_or_mc, 0);
+    assert_parse!(b".*$..*$***$$$$$$" => rle_or_mc, 1);
+
+    let expected = vec![(1, RLEToken::EndBlock)];
+    println!("{:?}", parse_line(b"\n"));
+    assert_parse!(b"!" => rle_line, expected);
+    assert_parse!(b"!\n" => parse_line, LineParse::RLELine(expected.clone()));
+    assert_parse!(b"!\n" => parse_file, ParseOut::RLE(expected.clone()));
+    assert_parse!(b"!\n\n" => parse_file, ParseOut::RLE(expected.clone()));
+
+    named!(tuple_opt<(Option<&[u8]>, Option<&[u8]>)>,
+        tuple!(opt!(tag!("A")), opt!(tag!("B"))));
+    println!("{:?}", tuple_opt(b""));
+    assert_parse!(b"" => tuple_opt, (None, None));
 }

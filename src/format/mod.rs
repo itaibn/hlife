@@ -30,7 +30,7 @@ impl<'a> Hashlife<'a> {
     }
 }
 
-// Test for parsing error found in ::evolve tests.
+// Test for parsing error found in ::evolve tests and others.
 #[test]
 fn test_block_from_bytes() {
     use block::Block;
@@ -48,7 +48,20 @@ fn test_block_from_bytes() {
         assert_eq!(hl.block_from_bytes(double_header), Err(()));
 
         // .mc
-        assert_eq!(hl.block_from_bytes(b"x=8,y=8\nbo$2bo$3o2$3o$2bo$bo!"),
+        assert_eq!(hl.block_from_bytes(
+            b"x=8,y=8,rule=B3/S23\nbo$2bo$3o2$3o$2bo$bo!"),
                    hl.block_from_bytes(b"[M2]\n.*$..*$***$$***$..*$.*$$\n"));
+        assert_eq!(
+            hl.block_from_bytes(b"[M2]\n.*$..*$***$$$$$$\n4 1 1 0 1\n"),
+            hl.block_from_bytes(
+            b"x=16,y=16,rule=B3/S23\nbo7bo$2bo7bo$3o5b3o5$bo$2bo$3o!"));
+    });
+}
+
+// From failure in write::test::test_round_trip
+#[test]
+fn test_empty_rle() {
+    Hashlife::with_new(|hl| {
+        hl.block_from_bytes(b"!\n").unwrap();
     });
 }
