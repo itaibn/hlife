@@ -7,6 +7,8 @@ pub use block::{Leaf, LEAF_SIZE};
 use block::{Block as RawBlock, Node as RawNode, CABlockCache};
 use util::{make_2x2, make_3x3};
 
+/// Global state for the Hashlife algorithm. For information on the lifetime
+/// parameter see `block::CABlockHash`.
 pub struct Hashlife<'a> {
     table: RefCell<CABlockCache<'a>>,
     small_evolve_cache: [u8; 1<<16],
@@ -28,6 +30,8 @@ struct Node<'a> {
 }
 */
 
+/// A table containing the 2x2 center block after one generation for all
+/// possible 4x4 blocks.
 fn mk_small_evolve_cache() -> [u8; 1<<16] {
     let mut res = [0; 1<<16];
     let bitcount = [0, 1, 1, 2, 1, 2, 2, 3];
@@ -56,6 +60,8 @@ fn mk_small_evolve_cache() -> [u8; 1<<16] {
 }
 
 impl<'a> Hashlife<'a> {
+    /// Create a new Hashlife and pass it to a function. For explanation on why
+    /// this function calling convention is used see `CABlockCache::with_new`
     pub fn with_new<F,T>(f: F) -> T
         where F: for<'b> FnOnce(Hashlife<'b>) -> T {
         CABlockCache::with_new(|bcache| {
@@ -70,85 +76,76 @@ impl<'a> Hashlife<'a> {
         })
     }
 
+    /// Create a new node with `elems` as corners
     pub fn node(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawNode<'a> {
         self.block_cache().node(elems)
     }
 
+    /// Create a new block with `elems` as corners
     pub fn node_block(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawBlock<'a> {
         RawBlock::Node(self.node(elems))
     }
 
+    /// Reference to underlying block cache (I don't remember why I made it
+    /// public)
     pub fn block_cache(&self) -> RefMut<CABlockCache<'a>> {
         self.table.borrow_mut()
     }
 
+    /// Given 2^(n+1)x2^(n+1) node `node`, progress it 2^(n-1) generations and
+    /// return 2^nx2^n block in the center. This is the main component of the
+    /// Hashlife algorithm.
     pub fn evolve(&self, node: RawNode<'a>) -> RawBlock<'a> {
         let elem = node.corners();
 
         node.evolve_cache().eval(move ||
-            match elem[0][0] {
-                RawBlock::Leaf(a00) => {
-                    let a01 = elem[0][1].unwrap_leaf();
-                    let a10 = elem[1][0].unwrap_leaf();
-                    let a11 = elem[1][1].unwrap_leaf();
-                    let res_leaf = self.evolve_leaf(
-                        [[a00, a01], [a10, a11]]);
-                    RawBlock::Leaf(res_leaf)
-                },
-                RawBlock::Node(_) => {
-                    let mut intermediates = [[RawBlock::Node(node); 3]; 3];
-                    for i in 0..3 {
-                        for j in 0..3 {
-                            // I don't know we need two separate `let`
-                            // statements, but the borrow checker complains if I
-                            // combine them.
-                            let subblock = self.subblock(node, i as u8,
-                                j as u8);
-                            let subnode = subblock.unwrap_node();
-                            intermediates[j][i] = self.evolve(subnode);
-                        }
-                    }
-                    self.evolve_finish(intermediates)
-                }
+            if node.depth() == 1 {
+                let elem_leafs = make_2x2(|i, j| elem[i][j].unwrap_leaf());
+                RawBlock::Leaf(self.evolve_leaf(elem_leafs))
+            } else {
+                let intermediates = make_3x3(|i, j| {
+                    // I don't know we need two separate `let`
+                    // statements, but the borrow checker complains if I
+                    // combine them.
+                    let subblock = self.subblock(node, i as u8,
+                        j as u8);
+                    let subnode = subblock.unwrap_node();
+                    self.evolve(subnode)
+                });
+                self.evolve_finish(intermediates)
             }
         )
     }
 
+    /// Evolve (3*2^n)x(3*2^n) block (encoded as a 3x3 array of 2^nx2^n blocks)
+    /// 2^(n-1) steps and return the 2^nx2^n block in the middle
     fn evolve_finish(&self, parts: [[RawBlock<'a>; 3]; 3]) -> RawBlock<'a>
     {
-        let mut res_components = [[parts[0][0]; 2]; 2];
-        for i in 0..2 {
-            for j in 0..2 {
-                let mut section = [[parts[0][0]; 2]; 2];
-                for x in 0..2 {
-                    for y in 0..2 {
-                        section[x][y] = parts[i+x][j+y];
-                    }
-                }
-                let subpart = self.node(section);
-                res_components[i][j] = self.evolve(subpart);
-            }
-        }
+        let res_components = make_2x2(|i, j| {
+            self.evolve(self.node(make_2x2(|y, x| parts[i+y][j+x])))
+        });
         self.node_block(res_components)
     }
 
+    /// Given 2^(n+1)x2^(n+1) block, return 2^nx2^n subblock that's y*2^(n-1)
+    /// south and x*2^(n-1) east of the north-west corner.
+    ///
     /// Public for use in other modules in this crate; don't rely on it.
-    pub fn subblock(&self, node: RawNode<'a>, x: u8, y: u8) -> RawBlock<'a>
+    pub fn subblock(&self, node: RawNode<'a>, y: u8, x: u8) -> RawBlock<'a>
     {
         debug_assert!(x < 3 && y < 3);
         let (x, y) = (x as usize, y as usize);
 
         if (x|y)&1 == 0 {
             node.corners()[y/2][x/2]
+        } else if node.depth() == 1 {
+            self.subblock_leaf(node, y, x)
         } else {
-            match node.corners()[0][0] {
-                RawBlock::Leaf(_) => self.subblock_leaf(node, x, y),
-                RawBlock::Node(_) => self.subblock_node(node, x, y),
-            }
+            self.subblock_node(node, y, x)
         }
     }
 
-    fn subblock_node(&self, node: RawNode<'a>, x: usize, y: usize) ->
+    fn subblock_node(&self, node: RawNode<'a>, y: usize, x: usize) ->
         RawBlock<'a> {
 
         //let (x, y) = (x as usize, y as usize);
@@ -160,7 +157,7 @@ impl<'a> Hashlife<'a> {
         self.node_block(components)
     }
 
-    fn subblock_leaf(&self, node: RawNode<'a>, x: usize, y: usize) ->
+    fn subblock_leaf(&self, node: RawNode<'a>, y: usize, x: usize) ->
         RawBlock<'a> {
 
         let mut output_leaf = 0;
@@ -178,8 +175,9 @@ impl<'a> Hashlife<'a> {
         RawBlock::Leaf(output_leaf)
     }
 
+    /// `evolve` specialized to when the corners are all leafs.
     #[inline]
-    fn evolve_leaf(&self, leafs: [[Leaf; 2]; 2]) -> u8 {
+    fn evolve_leaf(&self, leafs: [[Leaf; 2]; 2]) -> Leaf {
         let entry = leafs[0][0] as usize
             + ((leafs[0][1] as usize) << 2)
             + ((leafs[1][0] as usize) << 8)
@@ -187,6 +185,7 @@ impl<'a> Hashlife<'a> {
         self.small_evolve_cache[entry]
     }
 
+    /// Return blank block (all the cells are dead) with a given depth
     pub fn blank(&self, depth: usize) -> RawBlock<'a> {
         let mut blank_cache = self.blank_cache.borrow_mut();
 
@@ -234,12 +233,13 @@ impl<'a> Hashlife<'a> {
             });
 
             self.node_block(make_2x2(|y, x| {
-                let around = self.node(make_2x2(|j, i| parts[x+i][y+j]));
+                let around = self.node(make_2x2(|i, j| parts[y+i][x+j]));
                 self.step_pow2(around, lognsteps)
             }))
         }
     }
 
+    /// Return a block with all cells set randomly of a given depth.
     pub fn random_block<R:rand::Rng>(&self, rng: &mut R, depth: usize) ->
         RawBlock<'a> {
 
@@ -354,19 +354,19 @@ mod test {
 
             assert_eq!(hl.subblock(n, 0, 0),
                 hl.block_from_bytes(b"bo$bo!").unwrap());
-            assert_eq!(hl.subblock(n, 0, 1),
-                hl.block_from_bytes(b"bo$oo!").unwrap());
-            assert_eq!(hl.subblock(n, 0, 2),
-                hl.block_from_bytes(b"oo$o!").unwrap());
             assert_eq!(hl.subblock(n, 1, 0),
+                hl.block_from_bytes(b"bo$oo!").unwrap());
+            assert_eq!(hl.subblock(n, 2, 0),
+                hl.block_from_bytes(b"oo$o!").unwrap());
+            assert_eq!(hl.subblock(n, 0, 1),
                 hl.block_from_bytes(b"o$o!").unwrap());
             assert_eq!(hl.subblock(n, 1, 1),
                 hl.block_from_bytes(b"o$oo!").unwrap());
-            assert_eq!(hl.subblock(n, 1, 2),
-                hl.block_from_bytes(b"2o!").unwrap());
-            assert_eq!(hl.subblock(n, 2, 0),
-                hl.block_from_bytes(b"!").unwrap());
             assert_eq!(hl.subblock(n, 2, 1),
+                hl.block_from_bytes(b"2o!").unwrap());
+            assert_eq!(hl.subblock(n, 0, 2),
+                hl.block_from_bytes(b"!").unwrap());
+            assert_eq!(hl.subblock(n, 1, 2),
                 hl.block_from_bytes(b"$o!").unwrap());
             assert_eq!(hl.subblock(n, 2, 2),
                 hl.block_from_bytes(b"o!").unwrap());
@@ -378,11 +378,11 @@ mod test {
         Hashlife::with_new(|hl| {
             let b = hl.block_from_bytes(b"2$7o!").unwrap();
             let n = b.unwrap_node();
-            assert_eq!(hl.subblock(n, 1, 0),
-                hl.block_from_bytes(b"2$4o!").unwrap());
             assert_eq!(hl.subblock(n, 0, 1),
+                hl.block_from_bytes(b"2$4o!").unwrap());
+            assert_eq!(hl.subblock(n, 1, 0),
                 hl.block_from_bytes(b"4o!").unwrap());
-            assert_eq!(hl.subblock(n, 2, 0),
+            assert_eq!(hl.subblock(n, 0, 2),
                 hl.block_from_bytes(b"2$3o!").unwrap());
         });
     }
