@@ -17,7 +17,7 @@ impl<'a> Hashlife<'a> {
         let mut with_newline = bytes.to_vec();
         with_newline.push(b'\n');
 
-        if let IResult::Done(_, parse_out) =
+        if let IResult::Done(b"", parse_out) =
                 parse_file(&with_newline) {
             match parse_out {
                 ParseOut::RLE(tokens) => block_from_rle(self, &tokens),
@@ -52,9 +52,9 @@ fn test_block_from_bytes() {
             b"x=8,y=8,rule=B3/S23\nbo$2bo$3o2$3o$2bo$bo!"),
                    hl.block_from_bytes(b"[M2]\n.*$..*$***$$***$..*$.*$$\n"));
         assert_eq!(
-            hl.block_from_bytes(b"[M2]\n.*$..*$***$$$$$$\n4 1 1 0 1\n"),
+            hl.block_from_bytes(b"[M2]\n.*$..*$***$$$$$$\n4 1 1 0 1"),
             hl.block_from_bytes(
-            b"x=16,y=16,rule=B3/S23\nbo7bo$2bo7bo$3o5b3o5$bo$2bo$3o!"));
+            b"x=16,y=16,rule=B3/S23\nbo7bo$2bo7bo$3o5b3o6$9bo$10bo$8b3o!"));
     });
 }
 

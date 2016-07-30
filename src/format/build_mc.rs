@@ -29,6 +29,9 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
         };
         table.push(new_block)
     }
+    assert!(table.len() == mclines.len());
+    debug!("Table: {:?}", table);
+    //println!("{:?}", table);
     table.last().cloned().ok_or(())
 }
 
