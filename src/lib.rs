@@ -13,6 +13,9 @@ extern crate fnv;
 extern crate nom;
 extern crate rand;
 
+#[macro_use]
+mod util;
+
 pub mod evolve;
 pub mod format;
 pub mod global;
@@ -21,4 +24,3 @@ pub use evolve::Hashlife;
 
 mod block;
 mod cache;
-mod util;
