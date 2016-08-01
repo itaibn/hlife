@@ -13,6 +13,7 @@ fn read_file(path: &str) -> io::Result<Vec<u8>> {
     Ok(buf)
 }
 
+#[ignore]
 #[test]
 fn test_global_instances() {
     const TEST_INSTANCES: usize = 2;
