@@ -16,19 +16,19 @@ pub struct Hashlife<'a> {
     //placeholder_node: Node<'a>,
 }
 
-/*
-struct Block<'a> {
+#[derive(Clone, Copy, Debug)]
+pub struct Block<'a> {
     raw: RawBlock<'a>,
     hl: &'a Hashlife<'a>,
     depth: usize,
 }
 
-struct Node<'a> {
+#[derive(Clone, Copy, Debug)]
+pub struct Node<'a> {
     raw: RawNode<'a>,
     hl: &'a Hashlife<'a>,
     depth: usize,
 }
-*/
 
 /// A table containing the 2x2 center block after one generation for all
 /// possible 4x4 blocks.
@@ -209,11 +209,10 @@ impl<'a> Hashlife<'a> {
         }
     }
 
-/*
     fn block_from_raw(&'a self, raw: RawBlock<'a>) -> Block<'a> {
         Block {
             raw: raw,
-            hl: &self,
+            hl: self,
             depth: raw.depth(),
         }
     }
@@ -221,11 +220,10 @@ impl<'a> Hashlife<'a> {
     fn node_from_raw(&'a self, raw: RawNode<'a>) -> Node<'a> {
         Node {
             raw: raw,
-            hl: &self,
+            hl: self,
             depth: raw.depth(),
         }
     }
-*/
 
     pub fn step_pow2(&self, node: RawNode<'a>, lognsteps: usize) -> RawBlock<'a>
     {
@@ -263,6 +261,18 @@ impl<'a> Hashlife<'a> {
 impl<'a> fmt::Debug for Hashlife<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Hashlife instance>")
+    }
+}
+
+impl<'a> Node<'a> {
+    pub fn evolve(&self) -> Block<'a> {
+        self.hl.block_from_raw(self.hl.evolve(self.raw))
+    }
+}
+
+impl<'a> Block<'a> {
+    pub fn unwrap_node(self) -> Node<'a> {
+        self.hl.node_from_raw(self.raw.unwrap_node())
     }
 }
 
