@@ -9,7 +9,6 @@ pub fn log2_upper(n: u64) -> u32 {
     n.next_power_of_two().trailing_zeros()
 }
 
-// TODO: Incorporate into rest of this code
 pub fn make_2x2<A,F>(mut func: F) -> [[A; 2]; 2]
     where F : FnMut(usize, usize) -> A {
     
