@@ -77,17 +77,20 @@ impl<'a> Hashlife<'a> {
     }
 
     /// Create a new node with `elems` as corners
+    #[cfg_attr(features = "inline", inline)]
     pub fn node(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawNode<'a> {
         self.block_cache().node(elems)
     }
 
     /// Create a new block with `elems` as corners
+    #[cfg_attr(features = "inline", inline)]
     pub fn node_block(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawBlock<'a> {
         RawBlock::Node(self.node(elems))
     }
 
     /// Reference to underlying block cache (I don't remember why I made it
     /// public)
+    #[cfg_attr(features = "inline", inline)]
     pub fn block_cache(&self) -> RefMut<CABlockCache<'a>> {
         self.table.borrow_mut()
     }
@@ -119,6 +122,7 @@ impl<'a> Hashlife<'a> {
 
     /// Evolve (3*2^n)x(3*2^n) block (encoded as a 3x3 array of 2^nx2^n blocks)
     /// 2^(n-1) steps and return the 2^nx2^n block in the middle
+    #[cfg_attr(features = "inline", inline)]
     fn evolve_finish(&self, parts: [[RawBlock<'a>; 3]; 3]) -> RawBlock<'a>
     {
         let res_components = make_2x2(|i, j| {
@@ -131,6 +135,7 @@ impl<'a> Hashlife<'a> {
     /// south and x*2^(n-1) east of the north-west corner.
     ///
     /// Public for use in other modules in this crate; don't rely on it.
+    #[cfg_attr(features = "inline", inline)]
     pub fn subblock(&self, node: RawNode<'a>, y: u8, x: u8) -> RawBlock<'a>
     {
         debug_assert!(x < 3 && y < 3);
@@ -145,6 +150,7 @@ impl<'a> Hashlife<'a> {
         }
     }
 
+    #[cfg_attr(features = "inline", inline)]
     fn subblock_node(&self, node: RawNode<'a>, y: usize, x: usize) ->
         RawBlock<'a> {
 
@@ -157,6 +163,7 @@ impl<'a> Hashlife<'a> {
         self.node_block(components)
     }
 
+    #[cfg_attr(features = "inline", inline)]
     fn subblock_leaf(&self, node: RawNode<'a>, y: usize, x: usize) ->
         RawBlock<'a> {
 
