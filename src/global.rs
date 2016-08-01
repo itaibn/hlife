@@ -1,6 +1,6 @@
 
-use block::Block;
-use evolve::*;
+use block::{Block, LEAF_SIZE};
+use evolve::Hashlife;
 use util::{log2_upper, make_2x2};
 
 #[derive(Debug)]
