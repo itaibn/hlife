@@ -129,11 +129,6 @@ impl<'a> HeapNode<'a> {
         &self.evolve
     }
 
-    #[deprecated]
-    pub fn depth(&self) -> usize {
-        self.corners()[0][0].depth() + 1
-    }
-
     pub fn lg_size(&self) -> usize {
         self.corners()[0][0].lg_size() + 1
     }
@@ -186,25 +181,30 @@ impl<'a> Block<'a> {
     }
 
     // Will probably be moved
-    #[deprecated]
-    pub fn depth(&self) -> usize {
-        let mut count = 0;
+    pub fn lg_size(&self) -> usize {
+        let mut count = LG_LEAF_SIZE;
         let mut block: &Block = self;
         while let Block::Node(ref n) = *block {
-            block = &n.corners[0][0];
+            block = &n.corners()[0][0];
             count += 1;
         }
         count
     }
 
-    pub fn lg_size(&self) -> usize {
-        let mut count = LG_LEAF_SIZE;
-        let mut block: &Block = self;
-        while let Block::Node(ref n) = *block {
-            block = &n.corners[0][0];
-            count += 1;
+    pub fn lg_size_verified(&self) -> Result<usize, ()> {
+        match *self {
+            Block::Leaf(_) => Ok(LG_LEAF_SIZE),
+            Block::Node(ref n) => {
+                let corners = n.corners();
+                let size_m1 = try!(corners[0][0].lg_size_verified());
+                for &(i, j) in &[(0, 1), (1, 0), (1, 1)] {
+                    if corners[i][j].lg_size_verified() != Ok(size_m1) {
+                        return Err(());
+                    }
+                }
+                Ok(size_m1 + 1)
+            },
         }
-        count
     }
 
     pub fn is_blank(&self) -> bool {
@@ -271,17 +271,34 @@ mod test {
     use super::{CABlockCache, Block};
 
     #[test]
-    fn test_depth() {
+    fn test_lg_size() {
         CABlockCache::with_new(|mut bc| {
             let leaf = Block::Leaf(0x03);
-            assert_eq!(leaf.depth(), 0);
+            assert_eq!(leaf.lg_size(), 1);
             let n = bc.node([[leaf, leaf], [Block::Leaf(0x10), leaf]]);
             let mut block = Block::Node(n);
-            assert_eq!(block.depth(), 1);
-            for i in 2..10 {
+            assert_eq!(block.lg_size(), 2);
+            for i in 3..10 {
                 block = Block::Node(bc.node([[block; 2]; 2]));
-                assert_eq!(block.depth(), i);
+                assert_eq!(block.lg_size(), i);
             }
+        });
+    }
+
+    #[test]
+    fn test_lg_size_verified() {
+        use super::LG_LEAF_SIZE;
+
+        CABlockCache::with_new(|mut bc| {
+            let leaf = Block::Leaf(0x30);
+            assert_eq!(leaf.lg_size_verified(), Ok(LG_LEAF_SIZE));
+            let node1 = Block::Node(bc.node([[leaf; 2]; 2]));
+            assert_eq!(node1.lg_size_verified(), Ok(LG_LEAF_SIZE + 1));
+            let node2 = Block::Node(bc.node([[node1; 2]; 2]));
+            assert_eq!(node2.lg_size_verified(), Ok(LG_LEAF_SIZE + 2));
+            let node_err = Block::Node(bc.node([[node1, leaf], [node1,
+                node1]]));
+            assert_eq!(node_err.lg_size_verified(), Err(()));
         });
     }
 

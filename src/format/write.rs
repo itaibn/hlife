@@ -2,7 +2,8 @@ use block::{Block, Leaf, LEAF_SIZE};
 use super::parse::{RLEToken, RLEBuf, State};
 
 pub fn format_rle(block: &Block) -> String {
-    let len = 1 << block.lg_size();
+    //let len = 1 << block.lg_size();
+    let len = 1 << block.lg_size_verified().expect("Ill-formatted block");
     rle_to_string(len, len, matrix_to_rle(block_to_matrix(block)))
 }
 

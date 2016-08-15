@@ -19,7 +19,7 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
                          _ => unreachable!()};
                     if index == 0 {
                         debug_assert!(LEAF_SIZE == 2);
-                        hl.blank(d-2)
+                        hl.blank(d-1)
                     } else {
                         //*try!(table.get(index-1).ok_or(()))
                         table[index-1]
@@ -27,7 +27,8 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
                 }))
             }
         };
-        table.push(new_block)
+        debug_assert!(new_block.lg_size_verified().is_ok());
+        table.push(new_block);
     }
     assert!(table.len() == mclines.len());
     debug!("Table: {:?}", table);

@@ -84,7 +84,7 @@ fn encase<'a>(hl: &Hashlife<'a>, b: Block<'a>) -> Block<'a> {
             if 0 < x && x < 3 && 0 < y && y < 3 {
                 n.corners()[y-1][x-1]
             } else {
-                hl.blank(b.depth() - 1)
+                hl.blank(b.lg_size() - 1)
             }
         }))
     }))

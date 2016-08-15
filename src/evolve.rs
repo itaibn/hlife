@@ -191,10 +191,10 @@ impl<'a> Hashlife<'a> {
             + ((leafs[1][1] as usize) << 10);
         self.small_evolve_cache[entry]
     }
-
+    
     /// Return blank block (all the cells are dead) with a given depth
-    pub fn blank(&self, depth: usize) -> RawBlock<'a> {
-        //let depth = lg_size - LG_LEAF_SIZE;
+    pub fn blank(&self, lg_size: usize) -> RawBlock<'a> {
+        let depth = lg_size - LG_LEAF_SIZE;
         let mut blank_cache = self.blank_cache.borrow_mut();
 
         if depth < blank_cache.len() {
@@ -332,22 +332,22 @@ mod test {
     #[test]
     fn test_blank0() {
         Hashlife::with_new(|hl| {
-            let blank2 = hl.blank(2);
-            assert_eq!(blank2.lg_size(), 3);
-            let blank0 = hl.blank(0);
-            assert_eq!(blank0, Block::Leaf(0));
+            let blank3 = hl.blank(3);
+            assert_eq!(blank3.lg_size(), 3);
             let blank1 = hl.blank(1);
+            assert_eq!(blank1, Block::Leaf(0));
+            let blank2 = hl.blank(2);
+            assert_eq!(blank3.unwrap_node().corners(), &[[blank2; 2]; 2]);
             assert_eq!(blank2.unwrap_node().corners(), &[[blank1; 2]; 2]);
-            assert_eq!(blank1.unwrap_node().corners(), &[[blank0; 2]; 2]);
         });
     }
 
     #[test]
     fn test_blank1() {
         Hashlife::with_new(|hl| {
-            assert_eq!(hl.blank(0), Block::Leaf(0));
-            assert_eq!(hl.blank(1).lg_size(), 2);
-            assert_eq!(hl.blank(2).lg_size(), 3);
+            assert_eq!(hl.blank(1), Block::Leaf(0));
+            assert_eq!(hl.blank(2).lg_size(), 2);
+            assert_eq!(hl.blank(3).lg_size(), 3);
         });
     }
  
