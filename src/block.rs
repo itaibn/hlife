@@ -106,7 +106,8 @@ pub type Node<'a> = &'a HeapNode<'a>;
 // 45
 pub type Leaf = u8;
 
-pub const LEAF_SIZE: usize = 2;
+pub const LG_LEAF_SIZE: usize = 1;
+pub const LEAF_SIZE: usize = 1 << LG_LEAF_SIZE;
 // For global::encase
 //pub const QUARTER_LEAF_MASK: Leaf = 0x01;
 pub const LEAF_MASK: Leaf = 0x33;
@@ -128,8 +129,21 @@ impl<'a> HeapNode<'a> {
         &self.evolve
     }
 
+    #[deprecated]
     pub fn depth(&self) -> usize {
         self.corners()[0][0].depth() + 1
+    }
+
+    pub fn lg_size(&self) -> usize {
+        self.corners()[0][0].lg_size() + 1
+    }
+
+    pub fn node_of_leafs(&self) -> bool {
+        if let Block::Leaf(_) = self.corners()[0][0] {
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -172,8 +186,19 @@ impl<'a> Block<'a> {
     }
 
     // Will probably be moved
+    #[deprecated]
     pub fn depth(&self) -> usize {
         let mut count = 0;
+        let mut block: &Block = self;
+        while let Block::Node(ref n) = *block {
+            block = &n.corners[0][0];
+            count += 1;
+        }
+        count
+    }
+
+    pub fn lg_size(&self) -> usize {
+        let mut count = LG_LEAF_SIZE;
         let mut block: &Block = self;
         while let Block::Node(ref n) = *block {
             block = &n.corners[0][0];

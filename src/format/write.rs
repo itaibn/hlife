@@ -2,7 +2,7 @@ use block::{Block, Leaf, LEAF_SIZE};
 use super::parse::{RLEToken, RLEBuf, State};
 
 pub fn format_rle(block: &Block) -> String {
-    let len = LEAF_SIZE << block.depth();
+    let len = 1 << block.lg_size();
     rle_to_string(len, len, matrix_to_rle(block_to_matrix(block)))
 }
 

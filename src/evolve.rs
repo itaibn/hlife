@@ -3,7 +3,7 @@ use std::fmt;
 
 use rand;
 
-pub use block::{Leaf, LEAF_SIZE};
+pub use block::{Leaf, LG_LEAF_SIZE, LEAF_SIZE};
 use block::{Block as RawBlock, Node as RawNode, CABlockCache};
 use util::{make_2x2, make_3x3};
 
@@ -20,14 +20,14 @@ pub struct Hashlife<'a> {
 pub struct Block<'a> {
     raw: RawBlock<'a>,
     hl: &'a Hashlife<'a>,
-    depth: usize,
+    lg_size: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct Node<'a> {
     raw: RawNode<'a>,
     hl: &'a Hashlife<'a>,
-    depth: usize,
+    lg_size: usize,
 }
 
 /// A table containing the 2x2 center block after one generation for all
@@ -102,7 +102,7 @@ impl<'a> Hashlife<'a> {
         let elem = node.corners();
 
         node.evolve_cache().eval(move ||
-            if node.depth() == 1 {
+            if node.node_of_leafs() {
                 let elem_leafs = make_2x2(|i, j| elem[i][j].unwrap_leaf());
                 RawBlock::Leaf(self.evolve_leaf(elem_leafs))
             } else {
@@ -143,7 +143,7 @@ impl<'a> Hashlife<'a> {
 
         if (x|y)&1 == 0 {
             node.corners()[y/2][x/2]
-        } else if node.depth() == 1 {
+        } else if node.node_of_leafs() {
             self.subblock_leaf(node, y, x)
         } else {
             self.subblock_node(node, y, x)
@@ -194,6 +194,7 @@ impl<'a> Hashlife<'a> {
 
     /// Return blank block (all the cells are dead) with a given depth
     pub fn blank(&self, depth: usize) -> RawBlock<'a> {
+        //let depth = lg_size - LG_LEAF_SIZE;
         let mut blank_cache = self.blank_cache.borrow_mut();
 
         if depth < blank_cache.len() {
@@ -213,7 +214,7 @@ impl<'a> Hashlife<'a> {
         Block {
             raw: raw,
             hl: self,
-            depth: raw.depth(),
+            lg_size: raw.lg_size(),
         }
     }
 
@@ -221,15 +222,15 @@ impl<'a> Hashlife<'a> {
         Node {
             raw: raw,
             hl: self,
-            depth: raw.depth(),
+            lg_size: raw.lg_size(),
         }
     }
 
     pub fn step_pow2(&self, node: RawNode<'a>, lognsteps: usize) -> RawBlock<'a>
     {
-        assert!(lognsteps < node.depth());
+        assert!(lognsteps <= node.lg_size() - 2);
 
-        if lognsteps == node.depth() - 1 {
+        if lognsteps == node.lg_size() - 2 {
             self.evolve(node)
         } else {
             let parts = make_3x3(|i, j| {
@@ -332,7 +333,7 @@ mod test {
     fn test_blank0() {
         Hashlife::with_new(|hl| {
             let blank2 = hl.blank(2);
-            assert_eq!(blank2.depth(), 2);
+            assert_eq!(blank2.lg_size(), 3);
             let blank0 = hl.blank(0);
             assert_eq!(blank0, Block::Leaf(0));
             let blank1 = hl.blank(1);
@@ -345,8 +346,8 @@ mod test {
     fn test_blank1() {
         Hashlife::with_new(|hl| {
             assert_eq!(hl.blank(0), Block::Leaf(0));
-            assert_eq!(hl.blank(1).depth(), 1);
-            assert_eq!(hl.blank(2).depth(), 2);
+            assert_eq!(hl.blank(1).lg_size(), 2);
+            assert_eq!(hl.blank(2).lg_size(), 3);
         });
     }
  

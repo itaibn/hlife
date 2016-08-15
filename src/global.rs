@@ -1,5 +1,5 @@
 
-use block::{Block, LEAF_SIZE};
+use block::Block;
 use evolve::Hashlife;
 use util::{log2_upper, make_2x2};
 
@@ -38,8 +38,8 @@ impl<'a, 'b> Pattern<'a, 'b> {
 
     fn step_pow2_1(&mut self, lognsteps: usize) {
         let new_length = self.length() + (1 << (1 + lognsteps));
-        let depth_needed = log2_upper(new_length / (LEAF_SIZE as u64)) as usize;
-        while self.block.depth() < depth_needed {
+        let lgsize_needed = log2_upper(new_length) as usize;
+        while self.block.lg_size() < lgsize_needed {
             self.encase();
         }
         let reencase = encase(self.hl, self.block);
@@ -47,13 +47,13 @@ impl<'a, 'b> Pattern<'a, 'b> {
     }
 
     fn encase(&mut self) {
-        let depth = self.block.depth();
+        let lg_size = self.block.lg_size();
         self.block = encase(self.hl, self.block);
-        self.dead_space += 1 << (depth-1);
+        self.dead_space += 1 << lg_size;
     }
 
     fn length(&self) -> u64 {
-        ((LEAF_SIZE as u64) << self.block.depth()) - 2 * self.dead_space
+        (1 << self.block.lg_size()) - 2 * self.dead_space
     }
 }
 
@@ -64,10 +64,10 @@ impl<'a, 'b> PartialEq for Pattern<'a, 'b> {
         use std::mem::swap;
 
         let (mut a, mut b) = (self.block(), other.block());
-        if a.depth() > b.depth() {
+        if a.lg_size() > b.lg_size() {
             swap(&mut a, &mut b);
         }
-        while b.depth() > a.depth() {
+        while b.lg_size() > a.lg_size() {
             a = encase(self.hl, a);
         }
         a == b
