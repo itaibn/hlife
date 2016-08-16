@@ -28,6 +28,12 @@ impl<'a> Hashlife<'a> {
             Err(())
         }
     }
+
+    /// Simpler API for generating a block from a string; useful for quickly
+    /// generating a specific block, as in testing.
+    pub fn rle(&self, pat: &'static str) -> Block<'a> {
+        self.block_from_bytes(pat.as_bytes()).unwrap()
+    }
 }
 
 // Test for parsing error found in ::evolve tests and others.

@@ -125,16 +125,15 @@ mod test {
 
     #[test]
     fn test_round_trip() {
-        let tests: [&[u8]; 3] = [b"!\n", b"5bo!\n", b"2$o!\n"];
+        let tests: [&str; 3] = ["!\n", "5bo!\n", "2$o!\n"];
 
         Hashlife::with_new(|hl| {
             for &test in &tests {
-                let block = hl.block_from_bytes(test).unwrap();
+                let block = hl.rle(test);
                 let reformatted = format_rle(&block);
-                println!("{} -> {}", String::from_utf8(test.to_vec()).unwrap(),
-                    reformatted);
-                assert_eq!(Ok(block),
-                    hl.block_from_bytes(reformatted.as_bytes()));
+                println!("{} -> {}", test, reformatted);
+                assert_eq!(Ok(block), hl.block_from_bytes(
+                    reformatted.as_bytes()));
             }
         });
     }

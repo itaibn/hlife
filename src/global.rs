@@ -99,16 +99,18 @@ mod test {
     use super::Pattern;
     use evolve::Hashlife;
 
-    fn parse<'a, 'b>(hl: &'a Hashlife<'b>, bytes: &[u8]) -> Pattern<'a, 'b> {
-        Pattern::new(hl, hl.block_from_bytes(bytes).unwrap())
+    fn parse<'a, 'b>(hl: &'a Hashlife<'b>, bytes: &'static str)
+        -> Pattern<'a, 'b> {
+
+        Pattern::new(hl, hl.rle(bytes))
     }
 
     #[test]
     fn test_blinker_1gen() {
         Hashlife::with_new(|hl| {
-            let mut blinker_in = parse(&hl, b"$3o!");
+            let mut blinker_in = parse(&hl, "$3o!");
             blinker_in.step(1);
-            let blinker_out = parse(&hl, b"bo$bo$bo!");
+            let blinker_out = parse(&hl, "bo$bo$bo!");
             if blinker_in != blinker_out {
                 use format::write::format_rle;
                 panic!("{}\n{}", format_rle(&blinker_in.block()),

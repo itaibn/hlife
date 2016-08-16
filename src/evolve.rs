@@ -300,29 +300,23 @@ mod test {
 
     #[test]
     fn test_evolve() {
-        let input_rles: [&'static [u8]; 2] = [
-            b"bbo$boo$bbo!",
-            b"x = 8, y = 8, rule = B3/S23\n\
-            b3ob2o$bo2bobo$2obobo$bobob2o$obobob2o$2bo2b2o$ob2ob2o$bo2b3o!"
+        let input_rles: [&'static str; 2] = [
+            "bbo$boo$bbo!",
+            "x = 8, y = 8, rule = B3/S23\n\
+            3ob2o$bo2bobo$2obobo$bobob2o$obobob2o$2bo2b2o$ob2ob2o$bo2b3o!"
         ];
-        let output_rles: [&'static [u8]; 2] = [
-            b"oo$oo!",
+        let output_rles: [&'static str; 2] = [
+            "oo$oo!",
             //b"x = 4, y = 4, rule = B3/S23
-            b"o$b2o$o$o!"
+            "o$b2o$o$o!"
         ];
 
         Hashlife::with_new(|hl| {
             for (input_rle, output_rle) in input_rles.iter()
                                                      .zip(output_rles.iter()) {
-                print!("Testing:\n{}\n->\n{}\n",
-                    String::from_utf8_lossy(input_rle),
-                    String::from_utf8_lossy(output_rle));
-                let input = hl.block_from_bytes(*input_rle)
-                              .expect(&format!("Error parsing {:?}",
-                                    String::from_utf8_lossy(input_rle)));
-                let output = hl.block_from_bytes(*output_rle)
-                               .expect(&format!("Error parsing {:?}",
-                                    String::from_utf8_lossy(input_rle)));
+                print!("Testing:\n{}\n->\n{}\n", input_rle, output_rle);
+                let input = hl.rle(input_rle);
+                let output = hl.rle(output_rle);
 
                 assert_eq!(hl.evolve(input.unwrap_node()), output)
             }
@@ -354,54 +348,40 @@ mod test {
     #[test]
     fn test_step_pow2() {
         Hashlife::with_new(|hl| {
-            let b = hl.block_from_bytes(b"2$6o!").unwrap();
+            let b = hl.rle("2$6o!");
             let n = b.unwrap_node();
             assert_eq!(hl.step_pow2(n, 1), hl.evolve(n));
-            assert_eq!(hl.step_pow2(n, 0), hl.block_from_bytes(b"3o$3o!")
-                .unwrap());
-            assert_eq!(hl.step_pow2(n, 1), hl.block_from_bytes(b"3bo$2bo$2o!")
-                .unwrap());
+            assert_eq!(hl.step_pow2(n, 0), hl.rle("3o$3o!"));
+            assert_eq!(hl.step_pow2(n, 1), hl.rle("3bo$2bo$2o!"));
         });
     }
 
     #[test]
     fn test_subblock_0() {
         Hashlife::with_new(|hl| {
-            let b = hl.block_from_bytes(b"bo$bo$3o$o!").unwrap();
+            let b = hl.rle("bo$bo$3o$o!");
             let n = b.unwrap_node();
 
-            assert_eq!(hl.subblock(n, 0, 0),
-                hl.block_from_bytes(b"bo$bo!").unwrap());
-            assert_eq!(hl.subblock(n, 1, 0),
-                hl.block_from_bytes(b"bo$oo!").unwrap());
-            assert_eq!(hl.subblock(n, 2, 0),
-                hl.block_from_bytes(b"oo$o!").unwrap());
-            assert_eq!(hl.subblock(n, 0, 1),
-                hl.block_from_bytes(b"o$o!").unwrap());
-            assert_eq!(hl.subblock(n, 1, 1),
-                hl.block_from_bytes(b"o$oo!").unwrap());
-            assert_eq!(hl.subblock(n, 2, 1),
-                hl.block_from_bytes(b"2o!").unwrap());
-            assert_eq!(hl.subblock(n, 0, 2),
-                hl.block_from_bytes(b"!").unwrap());
-            assert_eq!(hl.subblock(n, 1, 2),
-                hl.block_from_bytes(b"$o!").unwrap());
-            assert_eq!(hl.subblock(n, 2, 2),
-                hl.block_from_bytes(b"o!").unwrap());
+            assert_eq!(hl.subblock(n, 0, 0), hl.rle("bo$bo!"));
+            assert_eq!(hl.subblock(n, 1, 0), hl.rle("bo$oo!"));
+            assert_eq!(hl.subblock(n, 2, 0), hl.rle("oo$o!"));
+            assert_eq!(hl.subblock(n, 0, 1), hl.rle("o$o!"));
+            assert_eq!(hl.subblock(n, 1, 1), hl.rle("o$oo!"));
+            assert_eq!(hl.subblock(n, 2, 1), hl.rle("2o!"));
+            assert_eq!(hl.subblock(n, 0, 2), hl.rle("!"));
+            assert_eq!(hl.subblock(n, 1, 2), hl.rle("$o!"));
+            assert_eq!(hl.subblock(n, 2, 2), hl.rle("o!"));
         });
     }
 
     #[test]
     fn test_subblock_1() {
         Hashlife::with_new(|hl| {
-            let b = hl.block_from_bytes(b"2$7o!").unwrap();
+            let b = hl.rle("2$7o!");
             let n = b.unwrap_node();
-            assert_eq!(hl.subblock(n, 0, 1),
-                hl.block_from_bytes(b"2$4o!").unwrap());
-            assert_eq!(hl.subblock(n, 1, 0),
-                hl.block_from_bytes(b"4o!").unwrap());
-            assert_eq!(hl.subblock(n, 0, 2),
-                hl.block_from_bytes(b"2$3o!").unwrap());
+            assert_eq!(hl.subblock(n, 0, 1), hl.rle("2$4o!"));
+            assert_eq!(hl.subblock(n, 1, 0), hl.rle("4o!"));
+            assert_eq!(hl.subblock(n, 0, 2), hl.rle("2$3o!"));
         });
     }
 }
