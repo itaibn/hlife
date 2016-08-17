@@ -2,8 +2,8 @@
 
 use std::ops::Range;
 
-use block::{Block, Leaf};
-use evolve::{Hashlife, LEAF_SIZE};
+use block::{Block, Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
+use evolve::Hashlife;
 use super::parse::{RLE, RLEEncode, RLEToken, State};
 
 fn expand_rle<A:Clone>(rle: &RLEEncode<A>) -> Vec<A> {
@@ -100,10 +100,20 @@ fn states_to_leaf(states: &[&[State]]) -> Leaf {
     assert!(states.len() == LEAF_SIZE && states.iter().all(|row| row.len() ==
         LEAF_SIZE));
 
+/*
     state_to_bit(states[0][0])
     | state_to_bit(states[0][1]) << 1
     | state_to_bit(states[1][0]) << 4
     | state_to_bit(states[1][1]) << 5
+*/
+    let mut res: Leaf = 0;
+    for y in 0..LEAF_SIZE {
+        for x in 0..LEAF_SIZE {
+            res |= state_to_bit(states[y][x]) << (y * LEAF_Y_SHIFT
+                + x * LEAF_X_SHIFT);
+        }
+    }
+    res
 }
 
 #[test]

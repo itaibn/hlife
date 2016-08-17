@@ -111,6 +111,8 @@ pub const LEAF_SIZE: usize = 1 << LG_LEAF_SIZE;
 // For global::encase
 //pub const QUARTER_LEAF_MASK: Leaf = 0x01;
 pub const LEAF_MASK: Leaf = 0x33;
+pub const LEAF_Y_SHIFT: usize = 4;
+pub const LEAF_X_SHIFT: usize = 1;
 
 impl<'a> HeapNode<'a> {
     fn from_elems_and_hash(elems: [[Block; 2]; 2], hash: u64) -> HeapNode {

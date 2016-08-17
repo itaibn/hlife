@@ -1,4 +1,4 @@
-use block::{Block, Leaf, LEAF_SIZE};
+use block::{Block, Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
 use super::parse::{RLEToken, RLEBuf, State};
 
 pub fn format_rle(block: &Block) -> String {
@@ -34,7 +34,14 @@ fn leaf_to_matrix(leaf: Leaf) -> [[State; LEAF_SIZE]; LEAF_SIZE] {
         }
     }
 
-    [[bit(leaf, 0), bit(leaf, 1)], [bit(leaf, 4), bit(leaf, 5)]]
+    //[[bit(leaf, 0), bit(leaf, 1)], [bit(leaf, 4), bit(leaf, 5)]]
+    let mut res = [[State::Dead; LEAF_SIZE]; LEAF_SIZE];
+    for y in 0..LEAF_SIZE {
+        for x in 0..LEAF_SIZE {
+            res[y][x] = bit(leaf, y * LEAF_Y_SHIFT + x * LEAF_X_SHIFT);
+        }
+    }
+    res
 }
 
 fn merge_rows<A>(mut top: Vec<Vec<A>>, mut bottom: Vec<Vec<A>>) -> Vec<Vec<A>> {

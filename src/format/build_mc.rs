@@ -1,4 +1,4 @@
-use block::{Block, LEAF_SIZE};
+use block::Block;
 use evolve::Hashlife;
 use util::make_2x2;
 
@@ -18,7 +18,7 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
                         {(0,0) => b0, (0,1) => b1, (1,0) => b2, (1,1) => b3,
                          _ => unreachable!()};
                     if index == 0 {
-                        debug_assert!(LEAF_SIZE == 2);
+                        //debug_assert!(LEAF_SIZE == 2);
                         hl.blank(d-1)
                     } else {
                         //*try!(table.get(index-1).ok_or(()))
@@ -38,8 +38,6 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
 
 fn build_mc_leaf<'a>(hl: &Hashlife<'a>, leaf: &MCLeaf) -> Block<'a> {
     use super::build_rle::block_from_matrix;
-
-    debug_assert!(LEAF_SIZE == 2);
 
     let full_leaf = leaf.0.iter().map(|row| {
         let mut new_row = row.clone();

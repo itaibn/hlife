@@ -185,6 +185,7 @@ impl<'a> Hashlife<'a> {
     /// `evolve` specialized to when the corners are all leafs.
     #[inline]
     fn evolve_leaf(&self, leafs: [[Leaf; 2]; 2]) -> Leaf {
+        debug_assert!(LEAF_SIZE == 2);
         let entry = leafs[0][0] as usize
             + ((leafs[0][1] as usize) << 2)
             + ((leafs[1][0] as usize) << 8)
