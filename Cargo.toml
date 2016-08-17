@@ -9,6 +9,7 @@ default = ["xor_hasher"]
 clippy_pedantic = ["clippy"]
 xor_hasher = []
 inline = []
+4x4_leaf = []
 
 [dependencies]
 fnv = "1.0.2"

@@ -26,7 +26,7 @@ fn block_to_matrix(block: &Block) -> Vec<Vec<State>> {
 #[inline]
 fn leaf_to_matrix(leaf: Leaf) -> [[State; LEAF_SIZE]; LEAF_SIZE] {
     #[inline]
-    fn bit(n: u8, bit: usize) -> State {
+    fn bit(n: Leaf, bit: usize) -> State {
         match (n >> bit) & 1 {
             0 => State::Dead,
             1 => State::Alive,

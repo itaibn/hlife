@@ -183,6 +183,7 @@ impl<'a> Hashlife<'a> {
     }
 
     /// `evolve` specialized to when the corners are all leafs.
+    #[cfg(not(feature = "4x4_leaf"))]
     #[inline]
     fn evolve_leaf(&self, leafs: [[Leaf; 2]; 2]) -> Leaf {
         debug_assert!(LEAF_SIZE == 2);
@@ -191,6 +192,37 @@ impl<'a> Hashlife<'a> {
             + ((leafs[1][0] as usize) << 8)
             + ((leafs[1][1] as usize) << 10);
         self.small_evolve_cache[entry]
+    }
+
+    #[cfg(feature = "4x4_leaf")]
+    fn evolve_leaf(&self, leafs: [[Leaf; 2]; 2]) -> Leaf {
+        let e4x4 = |l: u16| self.small_evolve_cache[l as usize] as Leaf;
+
+        let nw = leafs[0][0];
+        let ne = leafs[0][1];
+        let sw = leafs[1][0];
+        let se = leafs[1][1];
+        let n = ((nw >> 2) & 0x3333) | ((ne << 2) & 0xcccc);
+        let s = ((sw >> 2) & 0x3333) | ((se << 2) & 0xcccc);
+        let w = (nw >> 8) | (sw << 8);
+        let e = (ne >> 8) | (se << 8);
+        let c = (n >> 8) | (s << 8);
+
+        macro_rules! step_vars {
+            ( $( ($eD:ident, $D:expr) ),* ) => {
+                $( let $eD = e4x4($D); )*
+            }
+        }
+
+        step_vars! ((enw, nw), (en, n), (ene, ne), (ew, w), (ec,c), (ee, e),
+            (esw, sw), (es, s), (ese, se));
+
+        let eenw = e4x4(enw | en << 2 | ew << 8 | ec << 10);
+        let eene = e4x4(en | ene << 2 | ec << 8 | ee << 10);
+        let eesw = e4x4(ew | ec << 2 | esw << 8 | es << 10);
+        let eese = e4x4(ec | ee << 2 | es << 8 | ese << 10);
+
+        eenw | eene << 2 | eesw << 8 | eese << 10
     }
     
     /// Return blank block (all the cells are dead) with a given depth

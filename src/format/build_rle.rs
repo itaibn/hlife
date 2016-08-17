@@ -109,7 +109,7 @@ fn states_to_leaf(states: &[&[State]]) -> Leaf {
     let mut res: Leaf = 0;
     for y in 0..LEAF_SIZE {
         for x in 0..LEAF_SIZE {
-            res |= state_to_bit(states[y][x]) << (y * LEAF_Y_SHIFT
+            res |= (state_to_bit(states[y][x]) as Leaf) << (y * LEAF_Y_SHIFT
                 + x * LEAF_X_SHIFT);
         }
     }
