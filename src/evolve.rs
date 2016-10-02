@@ -224,6 +224,18 @@ impl<'a> Hashlife<'a> {
 
         eenw | eene << 2 | eesw << 8 | eese << 10
     }
+
+/*
+    fn leaf_step(&self, leafs: [[Leaf; 2]; 2], nstep: usize) -> Leaf {
+        assert!(nstep < LEAF_SIZE);
+        self.leaf_step_impl(leafs, nstep)
+    }
+*/
+
+//    #[cfg(not(feature = "4x4_leaf"))]
+//    fn leaf_step(&self, leafs: [[Leaf; 2]; 2], nstep: usize) -> Leaf {
+//        if nstep == 0 {
+//            leaf_step
     
     /// Return blank block (all the cells are dead) with a given depth
     pub fn blank(&self, lg_size: usize) -> RawBlock<'a> {
@@ -259,6 +271,7 @@ impl<'a> Hashlife<'a> {
         }
     }
 
+    #[cfg(not(feature = "4x4_leaf"))]
     pub fn step_pow2(&self, node: RawNode<'a>, lognsteps: usize) -> RawBlock<'a>
     {
         assert!(lognsteps <= node.lg_size() - 2);
@@ -278,11 +291,20 @@ impl<'a> Hashlife<'a> {
         }
     }
 
-    /// Return a block with all cells set randomly of a given depth.
+    #[cfg(feature = "4x4_leaf")]
+    pub fn step_pow2(&self, node: RawNode<'a>, lognsteps: usize) -> RawBlock<'a>
+    {
+        unimplemented!()
+    }
+
+    // Temp interface
+    /// Return a block with all cells set randomly of size 2^(depth+1)
     pub fn random_block<R:rand::Rng>(&self, rng: &mut R, depth: usize) ->
         RawBlock<'a> {
+        
+        let lg_size = depth + 1;
 
-        if depth == 0 {
+        if lg_size == LG_LEAF_SIZE {
             use block::LEAF_MASK;
             let leaf = rng.gen::<Leaf>() & LEAF_MASK;
             RawBlock::Leaf(leaf)
@@ -381,6 +403,7 @@ mod test {
         });
     }
  
+    #[cfg(not(feature = "4x4_leaf"))]
     #[test]
     fn test_step_pow2() {
         Hashlife::with_new(|hl| {

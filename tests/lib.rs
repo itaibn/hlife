@@ -4,8 +4,10 @@ use std::io::{self, Read};
 use std::fs::File;
 
 use hlife::Hashlife;
+#[cfg(not(feature = "4x4_leaf"))]
 use hlife::global::Pattern;
 
+#[cfg(not(feature = "4x4_leaf"))]
 fn read_file(path: &str) -> io::Result<Vec<u8>> {
     let mut buf = Vec::new();
     let mut file = try!(File::open(path));
@@ -13,6 +15,7 @@ fn read_file(path: &str) -> io::Result<Vec<u8>> {
     Ok(buf)
 }
 
+#[cfg(not(feature = "4x4_leaf"))]
 #[ignore]
 #[test]
 fn test_global_instances() {
