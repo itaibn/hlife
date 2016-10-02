@@ -112,6 +112,7 @@ pub const LEAF_SIZE: usize = 1 << LG_LEAF_SIZE;
 pub const LEAF_Y_SHIFT: usize = 4;
 pub const LEAF_X_SHIFT: usize = 1;
 
+#[cfg(not(feature = "4x4_leaf"))]
 mod leaf_2x2 {
     // 01
     // 45
@@ -124,6 +125,7 @@ mod leaf_2x2 {
     //pub const QUARTER_LEAF_MASK: Leaf = 0x01;
 }
 
+#[cfg(feature = "4x4_leaf")]
 mod leaf_4x4 {
     pub type Leaf = u16;
 
@@ -291,15 +293,17 @@ mod test {
 
     #[test]
     fn test_lg_size() {
+        use super::LG_LEAF_SIZE;
+
         CABlockCache::with_new(|mut bc| {
             let leaf = Block::Leaf(0x03);
-            assert_eq!(leaf.lg_size(), 1);
+            assert_eq!(leaf.lg_size(), LG_LEAF_SIZE);
             let n = bc.node([[leaf, leaf], [Block::Leaf(0x10), leaf]]);
             let mut block = Block::Node(n);
-            assert_eq!(block.lg_size(), 2);
-            for i in 3..10 {
+            assert_eq!(block.lg_size(), LG_LEAF_SIZE + 1);
+            for i in 2..10 {
                 block = Block::Node(bc.node([[block; 2]; 2]));
-                assert_eq!(block.lg_size(), i);
+                assert_eq!(block.lg_size(), LG_LEAF_SIZE + i);
             }
         });
     }

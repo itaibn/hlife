@@ -333,13 +333,13 @@ mod test {
 
     #[test]
     fn test_evolve() {
-        let input_rles: [&'static str; 2] = [
-            "bbo$boo$bbo!",
+        let input_rles: [&'static str; 1] = [
+            //"bbo$boo$bbo!",
             "x = 8, y = 8, rule = B3/S23\n\
             3ob2o$bo2bobo$2obobo$bobob2o$obobob2o$2bo2b2o$ob2ob2o$bo2b3o!"
         ];
-        let output_rles: [&'static str; 2] = [
-            "oo$oo!",
+        let output_rles: [&'static str; 1] = [
+            //"oo$oo!",
             //b"x = 4, y = 4, rule = B3/S23
             "o$b2o$o$o!"
         ];
@@ -359,22 +359,25 @@ mod test {
     #[test]
     fn test_blank0() {
         Hashlife::with_new(|hl| {
-            let blank3 = hl.blank(3);
-            assert_eq!(blank3.lg_size(), 3);
-            let blank1 = hl.blank(1);
-            assert_eq!(blank1, Block::Leaf(0));
-            let blank2 = hl.blank(2);
+            let blank3 = hl.blank(5);
+            assert_eq!(blank3.lg_size(), 5);
+            let blank1 = hl.blank(3);
+            let blank2 = hl.blank(4);
             assert_eq!(blank3.unwrap_node().corners(), &[[blank2; 2]; 2]);
             assert_eq!(blank2.unwrap_node().corners(), &[[blank1; 2]; 2]);
+
+
         });
     }
 
     #[test]
     fn test_blank1() {
+        use block::LG_LEAF_SIZE;
+
         Hashlife::with_new(|hl| {
-            assert_eq!(hl.blank(1), Block::Leaf(0));
-            assert_eq!(hl.blank(2).lg_size(), 2);
-            assert_eq!(hl.blank(3).lg_size(), 3);
+            assert_eq!(hl.blank(LG_LEAF_SIZE), Block::Leaf(0));
+            assert_eq!(hl.blank(4).lg_size(), 4);
+            assert_eq!(hl.blank(5).lg_size(), 5);
         });
     }
  
@@ -389,6 +392,7 @@ mod test {
         });
     }
 
+    #[cfg(not(feature = "4x4_leaf"))]
     #[test]
     fn test_subblock_0() {
         Hashlife::with_new(|hl| {
