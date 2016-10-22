@@ -1,10 +1,13 @@
+use std::cmp;
+
 use block::{Block, Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
 use super::parse::{RLEToken, RLEBuf, State};
 
+/// Transforms a block into RLE format. Panics if the block is ill-formed
 pub fn format_rle(block: &Block) -> String {
     //let len = 1 << block.lg_size();
-    let len = 1 << block.lg_size_verified().expect("Ill-formatted block");
-    rle_to_string(len, len, matrix_to_rle(block_to_matrix(block)))
+    let _ = 1 << block.lg_size_verified().expect("Ill-formatted block");
+    rle_to_string(matrix_to_rle(block_to_matrix(block)))
 }
 
 fn block_to_matrix(block: &Block) -> Vec<Vec<State>> {
@@ -60,41 +63,59 @@ fn merge_columns<A>(left: Vec<Vec<A>>, right: Vec<Vec<A>>) -> Vec<Vec<A>> {
         }).collect()
 }
 
-fn matrix_to_rle(matrix: Vec<Vec<State>>) -> RLEBuf {
+struct RLEData {
+    rle: RLEBuf,
+    xsize: usize,
+    ysize: usize
+}
+
+fn matrix_to_rle(matrix: Vec<Vec<State>>) -> RLEData {
     let mut res: RLEBuf = Vec::new();
     let mut blank_lines = 0;
+    let mut xmax = 0;
+    let mut ymax = 1;
+
     for line in matrix {
+        let mut xlen = 0;
         let mut run_val = State::Dead;
         let mut run_len = 0;
         let mut line_blank = true;
+
         for state in line {
             if state == run_val {
                 run_len += 1;
             } else {
                 if line_blank && blank_lines > 0 {
                     res.push((blank_lines, RLEToken::EndLine));
+                    ymax += blank_lines;
                     blank_lines = 1;
                     line_blank = false;
                 }
                 if run_len > 0 {
                     res.push((run_len, RLEToken::State(run_val)));
+                    xlen += run_len;
                 }
                 run_val = state;
                 run_len = 1;
             }
         }
+
         if run_val != State::Dead {
             res.push((run_len, RLEToken::State(run_val)));
+            xlen += run_len;
         }
+
         if line_blank {
             blank_lines += 1;
         }
+
+        xmax = cmp::max(xmax, xlen);
     }
     res.push((1, RLEToken::EndBlock));
-    res
+    RLEData {rle: res, xsize: xmax, ysize: ymax}
 }
 
-fn rle_to_string(x: usize, y: usize, rle: RLEBuf) -> String {
+fn rle_to_string(rle_data: RLEData) -> String {
     fn token_len_to_string(len: usize, token: RLEToken) -> String {
         let mut res = if len == 1 {String::new()} else {len.to_string()};
         res.push(match token {
@@ -105,6 +126,8 @@ fn rle_to_string(x: usize, y: usize, rle: RLEBuf) -> String {
         });
         res
     }
+
+    let RLEData {rle, ysize: y, xsize: x} = rle_data;
 
     let mut res = format!("x = {}, y = {}, rule = B3/S23\n", x, y);
     let mut line_len = 0;
@@ -155,10 +178,10 @@ mod test {
             let mut bc = hl.block_cache();
             let b0 = Block::Leaf(0x03);
             assert_eq!(format_rle(&b0),
-                "x = 2, y = 2, rule = B3/S23\n2o!\n");
+                "x = 2, y = 1, rule = B3/S23\n2o!\n");
             let b1 = Block::Node(bc.node([[b0, b0], [b0, b0]]));
             assert_eq!(format_rle(&b1),
-                "x = 4, y = 4, rule = B3/S23\n4o2$4o!\n");
+                "x = 4, y = 3, rule = B3/S23\n4o2$4o!\n");
         });
     }
 }
