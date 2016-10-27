@@ -104,9 +104,9 @@ pub enum Block<'a> {
 pub type Node<'a> = &'a HeapNode<'a>;
 
 #[cfg(feature = "4x4_leaf")]
-pub use self::leaf_4x4::{Leaf, LG_LEAF_SIZE, LEAF_MASK};
+pub use self::leaf_4x4::{Leaf, LG_LEAF_SIZE, LEAF_MASK, QUARTER_LEAF_MASK};
 #[cfg(not(feature = "4x4_leaf"))]
-pub use self::leaf_2x2::{Leaf, LG_LEAF_SIZE, LEAF_MASK};
+pub use self::leaf_2x2::{Leaf, LG_LEAF_SIZE, LEAF_MASK, QUARTER_LEAF_MASK};
 
 pub const LEAF_SIZE: usize = 1 << LG_LEAF_SIZE;
 pub const LEAF_Y_SHIFT: usize = 4;
@@ -122,7 +122,7 @@ mod leaf_2x2 {
     pub const LEAF_MASK: Leaf = 0x33;
 
     // For global::encase
-    //pub const QUARTER_LEAF_MASK: Leaf = 0x01;
+    pub const QUARTER_LEAF_MASK: Leaf = 0x01;
 }
 
 #[cfg(feature = "4x4_leaf")]
@@ -131,6 +131,8 @@ mod leaf_4x4 {
 
     pub const LG_LEAF_SIZE: usize = 2;
     pub const LEAF_MASK: Leaf = 0xffff;
+
+    pub const QUARTER_LEAF_MASK: Leaf = 0x33;
 }
 
 impl<'a> HeapNode<'a> {

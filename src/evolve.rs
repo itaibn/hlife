@@ -4,7 +4,14 @@ use std::fmt;
 use rand;
 
 pub use block::{Leaf, LG_LEAF_SIZE, LEAF_SIZE};
-use block::{Block as RawBlock, Node as RawNode, CABlockCache};
+use block::{
+    Block as RawBlock,
+    Node as RawNode,
+    CABlockCache,
+    QUARTER_LEAF_MASK,
+    LEAF_Y_SHIFT,
+    LEAF_X_SHIFT,
+};
 use util::{make_2x2, make_3x3};
 
 /// Global state for the Hashlife algorithm. For information on the lifetime
@@ -166,17 +173,23 @@ impl<'a> Hashlife<'a> {
     #[cfg_attr(features = "inline", inline)]
     fn subblock_leaf(&self, node: RawNode<'a>, y: usize, x: usize) ->
         RawBlock<'a> {
+        
+        const HALF_LEAF: usize = LEAF_SIZE / 2;
 
         let mut output_leaf = 0;
-        for i in 0..2 {
-            for j in 0..2 {
-                let xx = i+x;
+        for j in 0..2 {
+            for i in 0..2 {
                 let yy = j+y;
+                let xx = i+x;
                 debug_assert!(xx < 4 && yy < 4);
-                let cell = 1 & (node.corners()[yy/2][xx/2].unwrap_leaf()
-                    >> ((xx&1) + 4*(yy&1)));
-                output_leaf |= cell << (i + 4*j);
-                //println!("i {} j {} output_leaf {:x}", i, j, output_leaf);
+                let source_leaf = node.corners()[yy / 2][xx / 2].unwrap_leaf();
+                let source_shift = (yy&1) * HALF_LEAF * LEAF_Y_SHIFT
+                    + (xx&1) * HALF_LEAF * LEAF_X_SHIFT;
+                let output_shift = j * HALF_LEAF * LEAF_Y_SHIFT
+                    + i * HALF_LEAF * LEAF_X_SHIFT;
+                let cell = QUARTER_LEAF_MASK & (source_leaf >> source_shift);
+                output_leaf |= cell << output_shift;
+                println!("i {} j {} output_leaf {:x}", i, j, output_leaf);
             }
         }
         RawBlock::Leaf(output_leaf)
@@ -439,6 +452,10 @@ mod test {
         Hashlife::with_new(|hl| {
             let b = hl.rle("2$7o!");
             let n = b.unwrap_node();
+
+            // Debug
+            assert_eq!(hl.rle("2$4o!"), Block::Leaf(0xf00));
+
             assert_eq!(hl.subblock(n, 0, 1), hl.rle("2$4o!"));
             assert_eq!(hl.subblock(n, 1, 0), hl.rle("4o!"));
             assert_eq!(hl.subblock(n, 0, 2), hl.rle("2$3o!"));

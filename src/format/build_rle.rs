@@ -131,6 +131,7 @@ mod test {
     use super::block_from_rle;
 
     #[test]
+    #[cfg(not(feature = "4x4_leaf"))]
     fn test_build_examples() {
         use format::parse::RLEToken::*;
         use format::parse::State::*;
