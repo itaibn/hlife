@@ -1,7 +1,8 @@
-use block::Block;
+use block::{Block, LG_LEAF_SIZE};
 use evolve::Hashlife;
 use util::make_2x2;
 
+use super::build_rle::block_from_matrix;
 use super::parse::{State, MCLine, MCLeaf, MCNode};
 
 pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
@@ -37,7 +38,6 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
 }
 
 fn build_mc_leaf<'a>(hl: &Hashlife<'a>, leaf: &MCLeaf) -> Block<'a> {
-    use super::build_rle::block_from_matrix;
 
     let full_leaf = leaf.0.iter().map(|row| {
         let mut new_row = row.clone();
@@ -45,5 +45,6 @@ fn build_mc_leaf<'a>(hl: &Hashlife<'a>, leaf: &MCLeaf) -> Block<'a> {
         new_row
     }).collect::<Vec<_>>();
     let matrix = full_leaf.iter().map(|row| &**row).collect();
-    block_from_matrix(hl, 2, matrix)
+    assert!(LG_LEAF_SIZE <= 3);
+    block_from_matrix(hl, 3 - LG_LEAF_SIZE as u32, matrix)
 }

@@ -453,9 +453,6 @@ mod test {
             let b = hl.rle("2$7o!");
             let n = b.unwrap_node();
 
-            // Debug
-            assert_eq!(hl.rle("2$4o!"), Block::Leaf(0xf00));
-
             assert_eq!(hl.subblock(n, 0, 1), hl.rle("2$4o!"));
             assert_eq!(hl.subblock(n, 1, 0), hl.rle("4o!"));
             assert_eq!(hl.subblock(n, 0, 2), hl.rle("2$3o!"));
