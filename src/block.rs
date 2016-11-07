@@ -207,7 +207,7 @@ impl<'a> Block<'a> {
     pub fn lg_size(&self) -> usize {
         let mut count = LG_LEAF_SIZE;
         let mut block: &Block = self;
-        while let Block::Node(ref n) = *block {
+        while let Block::Node(n) = *block {
             block = &n.corners()[0][0];
             count += 1;
         }
@@ -217,7 +217,7 @@ impl<'a> Block<'a> {
     pub fn lg_size_verified(&self) -> Result<usize, ()> {
         match *self {
             Block::Leaf(_) => Ok(LG_LEAF_SIZE),
-            Block::Node(ref n) => {
+            Block::Node(n) => {
                 let corners = n.corners();
                 let size_m1 = try!(corners[0][0].lg_size_verified());
                 for &(i, j) in &[(0, 1), (1, 0), (1, 1)] {
@@ -233,7 +233,7 @@ impl<'a> Block<'a> {
     pub fn is_blank(&self) -> bool {
         match *self {
             Block::Leaf(ref l) => *l == 0,
-            Block::Node(ref n) => {
+            Block::Node(n) => {
                 let c = n.corners();
                 let x = c[0][0];
                 c[0][1] == x && c[1][0] == x && c[1][1] == x

@@ -14,7 +14,7 @@ fn block_to_matrix(block: &Block) -> Vec<Vec<State>> {
     match *block {
         Block::Leaf(l) => leaf_to_matrix(l).iter().map(|row|
             row.to_vec()).collect(),
-        Block::Node(ref n) => {
+        Block::Node(n) => {
             let corners = n.corners();
             merge_rows(
                 merge_columns(block_to_matrix(&corners[0][0]),

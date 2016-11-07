@@ -252,7 +252,6 @@ mod test {
         Hashlife::with_new(|hl| {
             for (input_rle, output_rle) in input_rles.iter()
                                                      .zip(output_rles.iter()) {
-                print!("Testing:\n{}\n->\n{}\n", input_rle, output_rle);
                 let input = hl.rle(input_rle);
                 let output = hl.rle(output_rle);
 
