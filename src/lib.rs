@@ -23,6 +23,7 @@ pub mod global;
 //pub use evolve::Hashlife;
 
 mod block;
+mod leaf;
 mod cache;
 
 use std::cell::{RefCell, RefMut};
