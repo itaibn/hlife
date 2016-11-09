@@ -31,13 +31,13 @@ use std::fmt;
 
 //use rand;
 
-pub use block::{Leaf, LG_LEAF_SIZE, LEAF_SIZE};
+pub use leaf::{Leaf, LG_LEAF_SIZE, LEAF_SIZE, LEAF_MASK};
 use block::{
     Block as RawBlock,
     Node as RawNode,
     CABlockCache,
 };
-use util::{make_2x2};
+use util::make_2x2;
 
 /// Global state for the Hashlife algorithm. For information on the lifetime
 /// parameter see `block::CABlockHash`.
@@ -164,7 +164,6 @@ impl<'a> Hashlife<'a> {
         let lg_size = depth + 1;
 
         if lg_size == LG_LEAF_SIZE {
-            use block::LEAF_MASK;
             let leaf = rng.gen::<Leaf>() & LEAF_MASK;
             RawBlock::Leaf(leaf)
         } else {
@@ -194,6 +193,7 @@ impl<'a> Block<'a> {
 #[cfg(test)]
 mod test {
     use super::Hashlife;
+    use leaf::LG_LEAF_SIZE;
     use block::Block;
 
     #[test]
@@ -212,8 +212,6 @@ mod test {
 
     #[test]
     fn test_blank1() {
-        use block::LG_LEAF_SIZE;
-
         Hashlife::with_new(|hl| {
             assert_eq!(hl.blank(LG_LEAF_SIZE), Block::Leaf(0));
             assert_eq!(hl.blank(4).lg_size(), 4);

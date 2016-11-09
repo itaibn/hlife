@@ -3,7 +3,7 @@ mod build_rle;
 mod build_mc;
 pub mod write;
 
-use evolve::Hashlife;
+use ::Hashlife;
 use block::Block;
 
 impl<'a> Hashlife<'a> {
@@ -40,7 +40,7 @@ impl<'a> Hashlife<'a> {
 #[test]
 fn test_block_from_bytes() {
     use block::Block;
-    use evolve::Hashlife;
+    use ::Hashlife;
 
     Hashlife::with_new(|hl| {
         assert!(hl.block_from_bytes(b"bbo$boo$bbo!").is_ok());

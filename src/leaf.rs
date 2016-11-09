@@ -1,11 +1,11 @@
 /// Module for the leaf data structure in the block tree.
 ///
 /// Leaf is the leaf data structure in a block. It is a type synonym for an integer type and stores
-/// a LEAF_SIZE x LEAF_SIZE block of cells as a bit vector. LEAF_SIZE is always a power of 2, and
-/// is equal to 2^LG_LEAF_SIZE.  For each bit, 1 represents alive and 0 represents dead.  The bit
-/// representing the (x, y) coordinate is the (y*LEAF_Y_SHIFT + x*LEAF_X_SHIFT)th least significant
-/// bit. LEAF_MASK is a mask with all valid bits of the leaf set, and QUARTER_LEAF_MASK is a mask
-/// for the top left (LEAF_SIZE/2) x (LEAF_SIZE/2) subblock.
+/// a `LEAF_SIZE x LEAF_SIZE` block of cells as a bit vector. LEAF_SIZE is always a power of 2, and
+/// is equal to `2^LG_LEAF_SIZE`.  For each bit, 1 represents alive and 0 represents dead.  The bit
+/// representing the (x, y) coordinate is the `(y*LEAF_Y_SHIFT + x*LEAF_X_SHIFT)`th least
+/// significant bit. `LEAF_MASK` is a mask with all valid bits of the leaf set, and
+/// `QUARTER_LEAF_MASK` is a mask for the top left (LEAF_SIZE/2) x (LEAF_SIZE/2) subblock.
 ///
 /// Currently there are two configurations for Leaf: LEAF_SIZE is 2 by default, but can be set to 4
 /// with the 4x4_leaf feature. With 4x4_leaf progressing a pattern is significantly more efficient,

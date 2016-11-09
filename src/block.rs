@@ -13,7 +13,7 @@ use self::xor_hasher::XorHasherBuilder as HashmapState;
 #[cfg(not(feature = "xor_hasher"))]
 use std::collections::hash_map::RandomState as HashmapState;
 
-pub use leaf::*;
+use leaf::{Leaf, LG_LEAF_SIZE};
 
 // [Currently these notes are out of date.]
 // NOTE ON OWNERSHIP AND SAFETY:
@@ -261,12 +261,12 @@ mod xor_hasher {
 
 #[cfg(test)]
 mod test {
+    use leaf::LG_LEAF_SIZE;
+
     use super::{CABlockCache, Block};
 
     #[test]
     fn test_lg_size() {
-        use super::LG_LEAF_SIZE;
-
         CABlockCache::with_new(|mut bc| {
             let leaf = Block::Leaf(0x03);
             assert_eq!(leaf.lg_size(), LG_LEAF_SIZE);
@@ -282,8 +282,6 @@ mod test {
 
     #[test]
     fn test_lg_size_verified() {
-        use super::LG_LEAF_SIZE;
-
         CABlockCache::with_new(|mut bc| {
             let leaf = Block::Leaf(0x30);
             assert_eq!(leaf.lg_size_verified(), Ok(LG_LEAF_SIZE));

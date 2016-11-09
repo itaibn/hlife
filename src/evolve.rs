@@ -1,8 +1,8 @@
-pub use ::Hashlife;
-pub use block::{Leaf, LG_LEAF_SIZE, LEAF_SIZE};
-use block::{
-    Block as RawBlock,
-    Node as RawNode,
+use ::Hashlife;
+use block::{Block as RawBlock, Node as RawNode};
+use leaf::{
+    Leaf,
+    LEAF_SIZE,
     QUARTER_LEAF_MASK,
     LEAF_Y_SHIFT,
     LEAF_X_SHIFT,
@@ -218,7 +218,9 @@ pub fn step_pow2<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lognsteps: usize) ->
 
 #[cfg(test)]
 mod test {
-    use super::{mk_small_evolve_cache, Hashlife};
+    use ::Hashlife;
+
+    use super::mk_small_evolve_cache;
 
     #[test]
     fn test_small_evolve_cache() {

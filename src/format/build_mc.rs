@@ -1,5 +1,6 @@
-use block::{Block, LG_LEAF_SIZE};
-use evolve::Hashlife;
+use ::Hashlife;
+use block::Block;
+use leaf::LG_LEAF_SIZE;
 use util::make_2x2;
 
 use super::build_rle::block_from_matrix;

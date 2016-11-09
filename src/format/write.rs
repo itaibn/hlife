@@ -1,6 +1,7 @@
 use std::cmp;
 
-use block::{Block, Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
+use block::Block;
+use leaf::{Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
 use super::parse::{RLEToken, RLEBuf, State};
 
 /// Transforms a block into RLE format. Panics if the block is ill-formed
@@ -151,7 +152,8 @@ fn rle_to_string(rle_data: RLEData) -> String {
 #[cfg(test)]
 mod test {
     use super::format_rle;
-    use evolve::Hashlife;
+    use block::Block;
+    use ::Hashlife;
 
     #[test]
     fn test_round_trip() {
@@ -173,8 +175,6 @@ mod test {
     #[cfg(not(feature = "4x4_leaf"))]
     #[test]
     fn test_instances() {
-        use block::Block;
-
         //if cfg!(features = "4x4_leaf")
 
         Hashlife::with_new(|hl| {
@@ -191,8 +191,6 @@ mod test {
     #[cfg(feature = "4x4_leaf")]
     #[test]
     fn test_instances() {
-        use block::Block;
-
         Hashlife::with_new(|hl| {
             let mut bc = hl.block_cache();
             let b0 = Block::Leaf(0x000f);

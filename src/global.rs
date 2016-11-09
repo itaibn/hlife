@@ -1,6 +1,6 @@
 
+use ::Hashlife;
 use block::Block;
-use evolve::Hashlife;
 use util::{log2_upper, make_2x2};
 
 #[derive(Debug)]
@@ -97,7 +97,7 @@ fn encase<'a>(hl: &Hashlife<'a>, b: Block<'a>) -> Block<'a> {
 #[cfg(test)]
 mod test {
     use super::Pattern;
-    use evolve::Hashlife;
+    use ::Hashlife;
 
     fn parse<'a, 'b>(hl: &'a Hashlife<'b>, bytes: &'static str)
         -> Pattern<'a, 'b> {

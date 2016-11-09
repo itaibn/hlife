@@ -2,8 +2,9 @@
 
 use std::ops::Range;
 
-use block::{Block, Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
-use evolve::Hashlife;
+use ::Hashlife;
+use block::Block;
+use leaf::{Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
 use super::parse::{RLE, RLEEncode, RLEToken, State};
 
 fn expand_rle<A:Clone>(rle: &RLEEncode<A>) -> Vec<A> {
@@ -136,7 +137,7 @@ mod test {
         use format::parse::RLEToken::*;
         use format::parse::State::*;
         use block::Block;
-        use evolve::Hashlife;
+        use ::Hashlife;
 
         //let tokens0 = vec![Run(1, Dead), Run(1, Alive), EndLine, Run(1, Alive),
         //    EndBlock];
