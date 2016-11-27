@@ -41,12 +41,14 @@ use util::make_2x2;
 
 /// Global state for the Hashlife algorithm. For information on the lifetime
 /// parameter see `block::CABlockHash`.
-pub struct Hashlife<'a> {
+struct HashlifeCache<'a> {
     table: RefCell<CABlockCache<'a>>,
     small_evolve_cache: [u8; 1<<16],
     blank_cache: RefCell<Vec<RawBlock<'a>>>,
     //placeholder_node: Node<'a>,
 }
+
+pub struct Hashlife<'a>(&'a HashlifeCache<'a>);
 
 #[derive(Clone, Copy, Debug)]
 pub struct Block<'a> {
@@ -69,13 +71,14 @@ impl<'a> Hashlife<'a> {
         where F: for<'b> FnOnce(Hashlife<'b>) -> T {
         CABlockCache::with_new(|bcache| {
             //let placeholder_node = bcache.new_block([[Block::Leaf(0); 2]; 2]);
-            let hashlife = Hashlife {
+            let hashlife_cache = HashlifeCache {
                 table: RefCell::new(bcache),
                 small_evolve_cache: evolve::mk_small_evolve_cache(),
                 blank_cache: RefCell::new(vec![RawBlock::Leaf(0)]),
                 //placeholder_node: placeholder_node,
             };
-            f(hashlife)
+            let hashlife = unsafe {&*(&hashlife_cache as *const _)};
+            f(Hashlife(hashlife))
         })
     }
 
@@ -95,7 +98,12 @@ impl<'a> Hashlife<'a> {
     /// public)
     #[cfg_attr(features = "inline", inline)]
     pub fn block_cache(&self) -> RefMut<CABlockCache<'a>> {
-        self.table.borrow_mut()
+        self.0.table.borrow_mut()
+    }
+
+    /// Small block cache for `evolve`
+    pub fn small_evolve_cache(&self) -> &[u8; 1<<16] {
+        &self.0.small_evolve_cache
     }
 
     /// Given 2^(n+1)x2^(n+1) node `node`, progress it 2^(n-1) generations and
@@ -118,7 +126,7 @@ impl<'a> Hashlife<'a> {
     /// Return blank block (all the cells are dead) with a given depth
     pub fn blank(&self, lg_size: usize) -> RawBlock<'a> {
         let depth = lg_size - LG_LEAF_SIZE;
-        let mut blank_cache = self.blank_cache.borrow_mut();
+        let mut blank_cache = self.0.blank_cache.borrow_mut();
 
         if depth < blank_cache.len() {
             blank_cache[depth]

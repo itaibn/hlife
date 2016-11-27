@@ -142,12 +142,13 @@ fn evolve_leaf(hl: &Hashlife, leafs: [[Leaf; 2]; 2]) -> Leaf {
         + ((leafs[0][1] as usize) << 2)
         + ((leafs[1][0] as usize) << 8)
         + ((leafs[1][1] as usize) << 10);
-    hl.small_evolve_cache[entry]
+    hl.small_evolve_cache()[entry]
 }
 
 #[cfg(feature = "4x4_leaf")]
 fn evolve_leaf(hl: &Hashlife, leafs: [[Leaf; 2]; 2]) -> Leaf {
-    let e4x4 = |l: u16| hl.small_evolve_cache[l as usize] as Leaf;
+    let small_evolve_cache = hl.small_evolve_cache();
+    let e4x4 = |l: Leaf| small_evolve_cache[l as usize] as Leaf;
 
     let nw = leafs[0][0];
     let ne = leafs[0][1];

@@ -67,6 +67,9 @@ impl<'a> CABlockCache<'a> {
         let blockref: &HeapNode<'a> = &**self.0.entry(hash).or_insert_with(||
             Box::new(HeapNode::from_elems_and_hash(elems, hash)));
         assert!(blockref.corners == elems, "Hash collision");
+        // [Update: No longer the only unsafe line, there's another line in
+        // lib.rs]
+        //
         // The only unsafe line in this crate! Extend the lifetime of blockref
         // to 'a. This is why the hashmap needs to store all the nodes in boxes:
         // If it stored the nodes directly, the reference to them would be
