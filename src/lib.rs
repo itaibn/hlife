@@ -64,6 +64,12 @@ pub struct Node<'a> {
     lg_size: usize,
 }
 
+impl<'a> Drop for HashlifeCache<'a> {
+    fn drop(&mut self) {
+        self.blank_cache.get_mut().clear();
+    }
+}
+
 impl<'a> Hashlife<'a> {
     /// Create a new Hashlife and pass it to a function. For explanation on why
     /// this function calling convention is used see `CABlockCache::with_new`
