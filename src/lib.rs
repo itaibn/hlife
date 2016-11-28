@@ -48,19 +48,20 @@ struct HashlifeCache<'a> {
     //placeholder_node: Node<'a>,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct Hashlife<'a>(&'a HashlifeCache<'a>);
 
 #[derive(Clone, Copy, Debug)]
 pub struct Block<'a> {
     raw: RawBlock<'a>,
-    hl: &'a Hashlife<'a>,
+    hl: Hashlife<'a>,
     lg_size: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct Node<'a> {
     raw: RawNode<'a>,
-    hl: &'a Hashlife<'a>,
+    hl: Hashlife<'a>,
     lg_size: usize,
 }
 
@@ -147,18 +148,18 @@ impl<'a> Hashlife<'a> {
         }
     }
 
-    fn block_from_raw(&'a self, raw: RawBlock<'a>) -> Block<'a> {
+    fn block_from_raw(&self, raw: RawBlock<'a>) -> Block<'a> {
         Block {
             raw: raw,
-            hl: self,
+            hl: *self,
             lg_size: raw.lg_size(),
         }
     }
 
-    fn node_from_raw(&'a self, raw: RawNode<'a>) -> Node<'a> {
+    fn node_from_raw(&self, raw: RawNode<'a>) -> Node<'a> {
         Node {
             raw: raw,
-            hl: self,
+            hl: *self,
             lg_size: raw.lg_size(),
         }
     }
@@ -186,7 +187,7 @@ impl<'a> Hashlife<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Hashlife<'a> {
+impl<'a> fmt::Debug for HashlifeCache<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "<Hashlife instance>")
     }
@@ -196,11 +197,45 @@ impl<'a> Node<'a> {
     pub fn evolve(&self) -> Block<'a> {
         self.hl.block_from_raw(self.hl.evolve(self.raw))
     }
+
+    pub fn corners(&self) -> [[Block<'a>; 2]; 2] {
+        make_2x2(|i, j| self.hl.block_from_raw(self.raw.corners()[i][j]))
+    }
+
+    pub fn lg_size(&self) -> usize {
+        self.lg_size
+    }
+
+    pub fn node_of_leafs(&self) -> bool {
+        self.lg_size == 1
+    }
 }
 
 impl<'a> Block<'a> {
+    pub fn destruct(self) -> Result<Node<'a>, Leaf> {
+        match self.raw {
+            RawBlock::Node(n) => Ok(self.hl.node_from_raw(n)),
+            RawBlock::Leaf(l) => Err(l),
+        }
+    }
+
+    pub fn unwrap_leaf(self) -> Leaf {
+        self.destruct().unwrap_err()
+
     pub fn unwrap_node(self) -> Node<'a> {
-        self.hl.node_from_raw(self.raw.unwrap_node())
+        self.destruct().unwrap()
+    }
+
+    pub fn lg_size(&self) -> usize {
+        self.lg_size
+    }
+
+    pub fn lg_size_verified(&self) -> Result<usize, ()> {
+        Ok(self.lg_size())
+    }
+
+    pub fn is_blank(&self) -> bool {
+        self.raw.is_blank()
     }
 }
 
