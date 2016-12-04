@@ -90,7 +90,6 @@ impl<'a> Hashlife<'a> {
     }
 
     /// Create a new raw node with `elems` as corners
-    #[cfg_attr(features = "inline", inline)]
     pub fn raw_node(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawNode<'a> {
         self.block_cache().node(elems)
     }
@@ -110,7 +109,6 @@ impl<'a> Hashlife<'a> {
     }
 
     /// Create a new block with `elems` as corners
-    #[cfg_attr(features = "inline", inline)]
     pub fn raw_node_block(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawBlock<'a>
     {
         RawBlock::Node(self.raw_node(elems))
@@ -124,7 +122,6 @@ impl<'a> Hashlife<'a> {
 
     /// Reference to underlying block cache (I don't remember why I made it
     /// public)
-    #[cfg_attr(features = "inline", inline)]
     pub fn block_cache(&self) -> RefMut<CABlockCache<'a>> {
         self.0.table.borrow_mut()
     }
@@ -160,7 +157,6 @@ impl<'a> Hashlife<'a> {
     /// south and x*2^(n-1) east of the north-west corner.
     ///
     /// Public for use in other modules in this crate; don't rely on it.
-    #[cfg_attr(features = "inline", inline)]
     pub fn raw_subblock(&self, node: RawNode<'a>, y: u8, x: u8) -> RawBlock<'a>
     {
        evolve::subblock(self, node, y, x)

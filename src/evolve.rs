@@ -64,7 +64,6 @@ pub fn evolve<'a>(hl: &Hashlife<'a>, node: RawNode<'a>) -> RawBlock<'a> {
 
 /// Evolve (3*2^n)x(3*2^n) block (encoded as a 3x3 array of 2^nx2^n blocks)
 /// 2^(n-1) steps and return the 2^nx2^n block in the middle
-#[cfg_attr(features = "inline", inline)]
 fn evolve_finish<'a>(hl: &Hashlife<'a>, parts: [[RawBlock<'a>; 3]; 3]) ->
     RawBlock<'a> {
 
@@ -78,7 +77,6 @@ fn evolve_finish<'a>(hl: &Hashlife<'a>, parts: [[RawBlock<'a>; 3]; 3]) ->
 /// south and x*2^(n-1) east of the north-west corner.
 ///
 /// Public for use in other modules in this crate; don't rely on it.
-#[cfg_attr(features = "inline", inline)]
 pub fn subblock<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, y: u8, x: u8) ->
     RawBlock<'a> {
 
@@ -94,7 +92,6 @@ pub fn subblock<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, y: u8, x: u8) ->
     }
 }
 
-#[cfg_attr(features = "inline", inline)]
 fn subblock_node<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, y: usize, x: usize)
     -> RawBlock<'a> {
 
@@ -107,7 +104,6 @@ fn subblock_node<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, y: usize, x: usize)
     hl.raw_node_block(components)
 }
 
-#[cfg_attr(features = "inline", inline)]
 fn subblock_leaf<'a>(_: &Hashlife<'a>, node: RawNode<'a>, y: usize, x: usize) ->
     RawBlock<'a> {
 

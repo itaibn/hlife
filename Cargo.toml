@@ -8,7 +8,6 @@ authors = ["Itai Bar-Natan <itaibn3141@gmail.com>"]
 default = ["xor_hasher"]
 clippy_pedantic = ["clippy"]
 xor_hasher = []
-inline = []
 4x4_leaf = []
 
 [dependencies]
