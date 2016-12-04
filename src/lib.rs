@@ -221,6 +221,7 @@ impl<'a> Block<'a> {
 
     pub fn unwrap_leaf(self) -> Leaf {
         self.destruct().unwrap_err()
+    }
 
     pub fn unwrap_node(self) -> Node<'a> {
         self.destruct().unwrap()
