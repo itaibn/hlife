@@ -91,14 +91,15 @@ impl<'a> Hashlife<'a> {
 
     /// Create a new node with `elems` as corners
     #[cfg_attr(features = "inline", inline)]
-    pub fn node(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawNode<'a> {
+    pub fn raw_node(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawNode<'a> {
         self.block_cache().node(elems)
     }
 
     /// Create a new block with `elems` as corners
     #[cfg_attr(features = "inline", inline)]
-    pub fn node_block(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawBlock<'a> {
-        RawBlock::Node(self.node(elems))
+    pub fn raw_node_block(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawBlock<'a>
+    {
+        RawBlock::Node(self.raw_node(elems))
     }
 
     /// Reference to underlying block cache (I don't remember why I made it
@@ -116,7 +117,7 @@ impl<'a> Hashlife<'a> {
     /// Given 2^(n+1)x2^(n+1) node `node`, progress it 2^(n-1) generations and
     /// return 2^nx2^n block in the center. This is the main component of the
     /// Hashlife algorithm.
-    pub fn evolve(&self, node: RawNode<'a>) -> RawBlock<'a> {
+    pub fn raw_evolve(&self, node: RawNode<'a>) -> RawBlock<'a> {
         evolve::evolve(self, node)
     }
 
@@ -125,13 +126,13 @@ impl<'a> Hashlife<'a> {
     ///
     /// Public for use in other modules in this crate; don't rely on it.
     #[cfg_attr(features = "inline", inline)]
-    pub fn subblock(&self, node: RawNode<'a>, y: u8, x: u8) -> RawBlock<'a>
+    pub fn raw_subblock(&self, node: RawNode<'a>, y: u8, x: u8) -> RawBlock<'a>
     {
        evolve::subblock(self, node, y, x)
     }
     
     /// Return blank block (all the cells are dead) with a given depth
-    pub fn blank(&self, lg_size: usize) -> RawBlock<'a> {
+    pub fn raw_blank(&self, lg_size: usize) -> RawBlock<'a> {
         let depth = lg_size - LG_LEAF_SIZE;
         let mut blank_cache = self.0.blank_cache.borrow_mut();
 
@@ -141,7 +142,7 @@ impl<'a> Hashlife<'a> {
             let mut big_blank = *blank_cache.last().unwrap();
             let repeats = depth + 1 - blank_cache.len();
             for _ in 0..repeats {
-                big_blank = self.node_block([[big_blank; 2]; 2]);
+                big_blank = self.raw_node_block([[big_blank; 2]; 2]);
                 blank_cache.push(big_blank);
             }
             big_blank
@@ -166,14 +167,15 @@ impl<'a> Hashlife<'a> {
 
     /// Return sidelength 2^(n-1) block at the center of node after it evolved
     /// for 2^lognsteps steps.
-    pub fn step_pow2(&self, node: RawNode<'a>, lognsteps: usize) -> RawBlock<'a>
-    {
+    pub fn raw_step_pow2(&self, node: RawNode<'a>, lognsteps: usize) ->
+        RawBlock<'a> {
+
         evolve::step_pow2(self, node, lognsteps)
     }
 
     // Temp interface
     /// Return a block with all cells set randomly of size 2^(depth+1)
-    pub fn random_block<R:rand::Rng>(&self, rng: &mut R, depth: usize) ->
+    pub fn raw_random_block<R:rand::Rng>(&self, rng: &mut R, depth: usize) ->
         RawBlock<'a> {
         
         let lg_size = depth + 1;
@@ -182,7 +184,8 @@ impl<'a> Hashlife<'a> {
             let leaf = rng.gen::<Leaf>() & LEAF_MASK;
             RawBlock::Leaf(leaf)
         } else {
-            self.node_block(make_2x2(|_,_| self.random_block(rng, depth-1)))
+            self.raw_node_block(make_2x2(|_,_| self.raw_random_block(rng,
+                depth-1)))
         }
     }
 }
@@ -195,7 +198,7 @@ impl<'a> fmt::Debug for HashlifeCache<'a> {
 
 impl<'a> Node<'a> {
     pub fn evolve(&self) -> Block<'a> {
-        self.hl.block_from_raw(self.hl.evolve(self.raw))
+        self.hl.block_from_raw(self.hl.raw_evolve(self.raw))
     }
 
     pub fn corners(&self) -> [[Block<'a>; 2]; 2] {
@@ -249,10 +252,10 @@ mod test {
     #[test]
     fn test_blank0() {
         Hashlife::with_new(|hl| {
-            let blank3 = hl.blank(5);
+            let blank3 = hl.raw_blank(5);
             assert_eq!(blank3.lg_size(), 5);
-            let blank1 = hl.blank(3);
-            let blank2 = hl.blank(4);
+            let blank1 = hl.raw_blank(3);
+            let blank2 = hl.raw_blank(4);
             assert_eq!(blank3.unwrap_node().corners(), &[[blank2; 2]; 2]);
             assert_eq!(blank2.unwrap_node().corners(), &[[blank1; 2]; 2]);
 
@@ -263,9 +266,9 @@ mod test {
     #[test]
     fn test_blank1() {
         Hashlife::with_new(|hl| {
-            assert_eq!(hl.blank(LG_LEAF_SIZE), Block::Leaf(0));
-            assert_eq!(hl.blank(4).lg_size(), 4);
-            assert_eq!(hl.blank(5).lg_size(), 5);
+            assert_eq!(hl.raw_blank(LG_LEAF_SIZE), Block::Leaf(0));
+            assert_eq!(hl.raw_blank(4).lg_size(), 4);
+            assert_eq!(hl.raw_blank(5).lg_size(), 5);
         });
     }
 }

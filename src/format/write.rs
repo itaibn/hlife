@@ -161,10 +161,10 @@ mod test {
 
         Hashlife::with_new(|hl| {
             for &test in &tests {
-                let block = hl.rle(test);
+                let block = hl.raw_rle(test);
                 let reformatted = format_rle(&block);
                 println!("{} -> {}", test, reformatted);
-                assert_eq!(Ok(block), hl.block_from_bytes(
+                assert_eq!(Ok(block), hl.raw_block_from_bytes(
                     reformatted.as_bytes()));
             }
         });

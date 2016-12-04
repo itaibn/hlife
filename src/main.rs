@@ -34,7 +34,7 @@ fn main() {
     });
 
     Hashlife::with_new(|hl| {
-        let block = hl.block_from_bytes(&rle_buf).unwrap_or_else(|_| {
+        let block = hl.raw_block_from_bytes(&rle_buf).unwrap_or_else(|_| {
             println!("Badly formatted RLE in {}", &args[1]);
             exit(1);
         });

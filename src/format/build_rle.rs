@@ -80,7 +80,7 @@ pub fn block_from_matrix<'a>(hl: &Hashlife<'a>, depth: u32, matrix:
                     submatrix);
             }
         }
-        Block::Node(hl.node(subblocks))
+        hl.raw_node_block(subblocks)
     }
 }
 
@@ -154,7 +154,7 @@ mod test {
 
         Hashlife::with_new(|hl| {
             assert_eq!(block_from_rle(&hl, &tokens0), Ok(Block::Leaf(0x12)));
-            let node = hl.node([[Block::Leaf(0x03), Block::Leaf(0x01)],
+            let node = hl.raw_node([[Block::Leaf(0x03), Block::Leaf(0x01)],
                 [Block::Leaf(0x01), Block::Leaf(0x00)]]);
             assert_eq!(block_from_rle(&hl, &tokens1), Ok(Block::Node(node)));
             assert_eq!(block_from_rle(&hl, &tokens2), Ok(Block::Leaf(0x00)));

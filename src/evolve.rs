@@ -53,10 +53,9 @@ pub fn evolve<'a>(hl: &Hashlife<'a>, node: RawNode<'a>) -> RawBlock<'a> {
                 // I don't know we need two separate `let`
                 // statements, but the borrow checker complains if I
                 // combine them.
-                let subblock = hl.subblock(node, i as u8,
-                    j as u8);
+                let subblock = subblock(hl, node, i as u8, j as u8);
                 let subnode = subblock.unwrap_node();
-                hl.evolve(subnode)
+                evolve(hl, subnode)
             });
             evolve_finish(hl, intermediates)
         }
@@ -70,9 +69,9 @@ fn evolve_finish<'a>(hl: &Hashlife<'a>, parts: [[RawBlock<'a>; 3]; 3]) ->
     RawBlock<'a> {
 
     let res_components = make_2x2(|i, j| {
-        hl.evolve(hl.node(make_2x2(|y, x| parts[i+y][j+x])))
+        evolve(hl, hl.raw_node(make_2x2(|y, x| parts[i+y][j+x])))
     });
-    hl.node_block(res_components)
+    hl.raw_node_block(res_components)
 }
 
 /// Given 2^(n+1)x2^(n+1) block, return 2^nx2^n subblock that's y*2^(n-1)
@@ -105,7 +104,7 @@ fn subblock_node<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, y: usize, x: usize)
         let yy = j+y;
         node.corners()[yy/2][xx/2].unwrap_node().corners()[yy&1][xx&1]
     });
-    hl.node_block(components)
+    hl.raw_node_block(components)
 }
 
 #[cfg_attr(features = "inline", inline)]
@@ -196,16 +195,16 @@ pub fn step_pow2<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lognsteps: usize) ->
     assert!(lognsteps <= node.lg_size() - 2);
 
     if lognsteps == node.lg_size() - 2 {
-        hl.evolve(node)
+        evolve(hl, node)
     } else {
         let parts = make_3x3(|i, j| {
-            hl.subblock(hl.subblock(node, i as u8, j as
-                u8).unwrap_node(), 1, 1)
+            subblock(hl,
+                subblock(hl, node, i as u8, j as u8).unwrap_node(), 1, 1)
         });
 
-        hl.node_block(make_2x2(|y, x| {
-            let around = hl.node(make_2x2(|i, j| parts[y+i][x+j]));
-            hl.step_pow2(around, lognsteps)
+        hl.raw_node_block(make_2x2(|y, x| {
+            let around = hl.raw_node(make_2x2(|i, j| parts[y+i][x+j]));
+            step_pow2(hl, around, lognsteps)
         }))
     }
 }
@@ -255,10 +254,10 @@ mod test {
         Hashlife::with_new(|hl| {
             for (input_rle, output_rle) in input_rles.iter()
                                                      .zip(output_rles.iter()) {
-                let input = hl.rle(input_rle);
-                let output = hl.rle(output_rle);
+                let input = hl.raw_rle(input_rle);
+                let output = hl.raw_rle(output_rle);
 
-                assert_eq!(hl.evolve(input.unwrap_node()), output)
+                assert_eq!(hl.raw_evolve(input.unwrap_node()), output)
             }
         });
     }
@@ -267,11 +266,11 @@ mod test {
     #[test]
     fn test_step_pow2() {
         Hashlife::with_new(|hl| {
-            let b = hl.rle("2$6o!");
+            let b = hl.raw_rle("2$6o!");
             let n = b.unwrap_node();
-            assert_eq!(hl.step_pow2(n, 1), hl.evolve(n));
-            assert_eq!(hl.step_pow2(n, 0), hl.rle("3o$3o!"));
-            assert_eq!(hl.step_pow2(n, 1), hl.rle("3bo$2bo$2o!"));
+            assert_eq!(hl.raw_step_pow2(n, 1), hl.raw_evolve(n));
+            assert_eq!(hl.raw_step_pow2(n, 0), hl.raw_rle("3o$3o!"));
+            assert_eq!(hl.raw_step_pow2(n, 1), hl.raw_rle("3bo$2bo$2o!"));
         });
     }
 
@@ -279,30 +278,30 @@ mod test {
     #[test]
     fn test_subblock_0() {
         Hashlife::with_new(|hl| {
-            let b = hl.rle("bo$bo$3o$o!");
+            let b = hl.raw_rle("bo$bo$3o$o!");
             let n = b.unwrap_node();
 
-            assert_eq!(hl.subblock(n, 0, 0), hl.rle("bo$bo!"));
-            assert_eq!(hl.subblock(n, 1, 0), hl.rle("bo$oo!"));
-            assert_eq!(hl.subblock(n, 2, 0), hl.rle("oo$o!"));
-            assert_eq!(hl.subblock(n, 0, 1), hl.rle("o$o!"));
-            assert_eq!(hl.subblock(n, 1, 1), hl.rle("o$oo!"));
-            assert_eq!(hl.subblock(n, 2, 1), hl.rle("2o!"));
-            assert_eq!(hl.subblock(n, 0, 2), hl.rle("!"));
-            assert_eq!(hl.subblock(n, 1, 2), hl.rle("$o!"));
-            assert_eq!(hl.subblock(n, 2, 2), hl.rle("o!"));
+            assert_eq!(hl.raw_subblock(n, 0, 0), hl.raw_rle("bo$bo!"));
+            assert_eq!(hl.raw_subblock(n, 1, 0), hl.raw_rle("bo$oo!"));
+            assert_eq!(hl.raw_subblock(n, 2, 0), hl.raw_rle("oo$o!"));
+            assert_eq!(hl.raw_subblock(n, 0, 1), hl.raw_rle("o$o!"));
+            assert_eq!(hl.raw_subblock(n, 1, 1), hl.raw_rle("o$oo!"));
+            assert_eq!(hl.raw_subblock(n, 2, 1), hl.raw_rle("2o!"));
+            assert_eq!(hl.raw_subblock(n, 0, 2), hl.raw_rle("!"));
+            assert_eq!(hl.raw_subblock(n, 1, 2), hl.raw_rle("$o!"));
+            assert_eq!(hl.raw_subblock(n, 2, 2), hl.raw_rle("o!"));
         });
     }
 
     #[test]
     fn test_subblock_1() {
         Hashlife::with_new(|hl| {
-            let b = hl.rle("2$7o!");
+            let b = hl.raw_rle("2$7o!");
             let n = b.unwrap_node();
 
-            assert_eq!(hl.subblock(n, 0, 1), hl.rle("2$4o!"));
-            assert_eq!(hl.subblock(n, 1, 0), hl.rle("4o!"));
-            assert_eq!(hl.subblock(n, 0, 2), hl.rle("2$3o!"));
+            assert_eq!(hl.raw_subblock(n, 0, 1), hl.raw_rle("2$4o!"));
+            assert_eq!(hl.raw_subblock(n, 1, 0), hl.raw_rle("4o!"));
+            assert_eq!(hl.raw_subblock(n, 0, 2), hl.raw_rle("2$3o!"));
         });
     }
 }

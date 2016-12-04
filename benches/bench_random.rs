@@ -12,7 +12,8 @@ fn bench_random_at_depth(n: usize, b: &mut Bencher) {
     assert!(n > 0);
     let mut rng = thread_rng();
     Hashlife::with_new(|hl| {
-        b.iter(|| hl.evolve(hl.random_block(&mut rng, n).unwrap_node()));
+        b.iter(|| hl.raw_evolve(hl.raw_random_block(&mut rng,
+            n).unwrap_node()));
     });
 }
 
