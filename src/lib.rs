@@ -89,10 +89,24 @@ impl<'a> Hashlife<'a> {
         })
     }
 
-    /// Create a new node with `elems` as corners
+    /// Create a new raw node with `elems` as corners
     #[cfg_attr(features = "inline", inline)]
     pub fn raw_node(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawNode<'a> {
         self.block_cache().node(elems)
+    }
+
+    /// Creates a node `elems` as corners. Panics with sizes don't match.
+    pub fn node(&self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
+        let elem_lg_size = elems[0][0].lg_size();
+        make_2x2(|i, j| assert!(elems[i][j].lg_size() == elem_lg_size,
+            "Sizes don't match in new node"));
+        let raw_elems = make_2x2(|i, j| elems[i][j].raw());
+
+        Node {
+            raw: self.raw_node(raw_elems),
+            hl: *self,
+            lg_size: elem_lg_size + 1,
+        }
     }
 
     /// Create a new block with `elems` as corners
@@ -100,6 +114,12 @@ impl<'a> Hashlife<'a> {
     pub fn raw_node_block(&self, elems: [[RawBlock<'a>; 2]; 2]) -> RawBlock<'a>
     {
         RawBlock::Node(self.raw_node(elems))
+    }
+
+    /// Creates a new block with `elems` as corners. Panics if sizes don't
+    /// match.
+    pub fn node_block(&self, elems: [[Block<'a>; 2]; 2]) -> Block<'a> {
+        Block::from_node(self.node(elems))
     }
 
     /// Reference to underlying block cache (I don't remember why I made it
@@ -117,8 +137,23 @@ impl<'a> Hashlife<'a> {
     /// Given 2^(n+1)x2^(n+1) node `node`, progress it 2^(n-1) generations and
     /// return 2^nx2^n block in the center. This is the main component of the
     /// Hashlife algorithm.
+    ///
+    /// This is the raw version of big stepping.
     pub fn raw_evolve(&self, node: RawNode<'a>) -> RawBlock<'a> {
         evolve::evolve(self, node)
+    }
+
+    /// Given 2^(n+1)x2^(n+1) node `node`, progress it 2^(n-1) generations and
+    /// return 2^nx2^n block in the center. This is the main component of the
+    /// Hashlife algorithm.
+    ///
+    /// This is the normal version of big stepping.
+    pub fn big_step(&self, node: Node<'a>) -> Block<'a> {
+        Block {
+            raw: evolve::evolve(self, node.raw),
+            hl: *self,
+            lg_size: node.lg_size - 1, 
+        }
     }
 
     /// Given 2^(n+1)x2^(n+1) block, return 2^nx2^n subblock that's y*2^(n-1)
@@ -131,7 +166,7 @@ impl<'a> Hashlife<'a> {
        evolve::subblock(self, node, y, x)
     }
     
-    /// Return blank block (all the cells are dead) with a given depth
+    /// Returns a raw blank block (all the cells are dead) with a given depth
     pub fn raw_blank(&self, lg_size: usize) -> RawBlock<'a> {
         let depth = lg_size - LG_LEAF_SIZE;
         let mut blank_cache = self.0.blank_cache.borrow_mut();
@@ -149,11 +184,20 @@ impl<'a> Hashlife<'a> {
         }
     }
 
+    /// Returns a blank block (all the cells are dead) with a given depth
+    pub fn blank(&self, lg_size: usize) -> Block<'a> {
+        Block {
+            raw: self.raw_blank(lg_size),
+            hl: *self,
+            lg_size: lg_size,
+        }
+    }
+
     fn block_from_raw(&self, raw: RawBlock<'a>) -> Block<'a> {
         Block {
             raw: raw,
             hl: *self,
-            lg_size: raw.lg_size(),
+            lg_size: raw.lg_size_verified().unwrap(),
         }
     }
 
@@ -161,7 +205,7 @@ impl<'a> Hashlife<'a> {
         Node {
             raw: raw,
             hl: *self,
-            lg_size: raw.lg_size(),
+            lg_size: RawBlock::Node(raw).lg_size_verified().unwrap(),
         }
     }
 
@@ -197,6 +241,10 @@ impl<'a> fmt::Debug for HashlifeCache<'a> {
 }
 
 impl<'a> Node<'a> {
+    pub fn raw(&self) -> RawNode<'a> {
+        self.raw
+    }
+
     pub fn evolve(&self) -> Block<'a> {
         self.hl.block_from_raw(self.hl.raw_evolve(self.raw))
     }
@@ -215,6 +263,18 @@ impl<'a> Node<'a> {
 }
 
 impl<'a> Block<'a> {
+    pub fn raw(&self) -> RawBlock<'a> {
+        self.raw
+    }
+
+
+    pub fn from_node(node: Node<'a>) -> Self {
+        Block {
+            raw: RawBlock::Node(node.raw),
+            hl: node.hl,
+            lg_size: node.lg_size,
+        }
+    }
     pub fn destruct(self) -> Result<Node<'a>, Leaf> {
         match self.raw {
             RawBlock::Node(n) => Ok(self.hl.node_from_raw(n)),
