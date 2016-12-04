@@ -15,6 +15,13 @@ pub fn make_2x2<A,F>(mut func: F) -> [[A; 2]; 2]
     [[func(0, 0), func(0, 1)], [func(1, 0), func(1, 1)]]
 }
 
+pub fn try_make_2x2<A,E,F>(mut func: F) -> Result<[[A; 2]; 2], E>
+    where F : FnMut(usize, usize) -> Result<A,E> {
+    
+    Ok([[try!(func(0, 0)), try!(func(0, 1))],
+        [try!(func(1, 0)), try!(func(1, 1))]])
+}
+
 pub fn make_3x3<A,F>(mut func: F) -> [[A; 3]; 3]
     where F : FnMut(usize, usize) -> A {
 

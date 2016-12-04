@@ -61,6 +61,8 @@ fn test_block_from_bytes() {
             hl.raw_block_from_bytes(b"[M2]\n.*$..*$***$$$$$$\n4 1 1 0 1"),
             hl.raw_block_from_bytes(
             b"x=16,y=16,rule=B3/S23\nbo7bo$2bo7bo$3o5b3o6$9bo$10bo$8b3o!"));
+        assert_eq!(hl.raw_block_from_bytes(b"[M2]\n*$$$$$$$$\n4 1 1 1 2"),
+                   Err(()));
     });
 }
 

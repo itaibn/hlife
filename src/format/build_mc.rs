@@ -1,7 +1,7 @@
 use ::Hashlife;
 use block::Block;
 use leaf::LG_LEAF_SIZE;
-use util::make_2x2;
+use util::try_make_2x2;
 
 use super::build_rle::block_from_matrix;
 use super::parse::{State, MCLine, MCLeaf, MCNode};
@@ -15,18 +15,17 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
         let new_block = match *line {
             MCLine::Leaf(ref leaf) => build_mc_leaf(hl, leaf),
             MCLine::Node(MCNode(d, b0, b1, b2, b3)) => {
-                hl.raw_node_block(make_2x2::<Block, _>(|i, j| {
+                let elems = try!(try_make_2x2(|i, j| {
                     let index: usize = match (i, j)
                         {(0,0) => b0, (0,1) => b1, (1,0) => b2, (1,1) => b3,
                          _ => unreachable!()};
                     if index == 0 {
-                        hl.raw_blank(d-1)
+                        Ok(hl.raw_blank(d-1))
                     } else {
-                        //*try!(table.get(index-1).ok_or(()))
-                        // CAN PANIC
-                        table[index-1]
+                        Ok(*try!(table.get(index-1).ok_or(())))
                     }
-                }))
+                }));
+                hl.raw_node_block(elems)
             }
         };
         debug_assert!(new_block.lg_size_verified().is_ok());
