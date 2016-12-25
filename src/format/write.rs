@@ -197,11 +197,10 @@ mod test {
     #[test]
     fn test_instances() {
         Hashlife::with_new(|hl| {
-            let mut bc = hl.block_cache();
-            let b0 = Block::Leaf(0x000f);
+            let b0 = hl.leaf(0x000f);
             assert_eq!(format_rle(&b0),
                 "x = 4, y = 1, rule = B3/S23\n4o!\n");
-            let b1 = Block::Node(bc.node([[b0, b0], [b0, b0]]));
+            let b1 = hl.node_block([[b0, b0], [b0, b0]]);
             assert_eq!(format_rle(&b1),
                 "x = 8, y = 5, rule = B3/S23\n8o4$8o!\n");
         });

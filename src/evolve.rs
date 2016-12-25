@@ -198,7 +198,7 @@ fn leaf_step(_: &Hashlife, leafs: [[Leaf; 2]; 2], nstep: u64) -> Leaf {
 #[cfg(feature = "4x4_leaf")]
 fn leaf_step(hl: &Hashlife, leafs: [[Leaf; 2]; 2], nstep: u64) -> Leaf {
     // LEAF_SIZE / 2 == 2
-    debug_assert!(nstep < LEAF_SIZE / 2);
+    debug_assert!(nstep < (LEAF_SIZE / 2) as u64);
 
     if nstep == 0 {
         let mut res = 0;
@@ -227,7 +227,7 @@ fn leaf_step(hl: &Hashlife, leafs: [[Leaf; 2]; 2], nstep: u64) -> Leaf {
         let mut collected: u64 = 0;
         debug_assert!(LEAF_X_SHIFT == 1);
         for y in 0..2 {
-            for x in 0.2 {
+            for x in 0..2 {
                 /*
                 let ny = 1 - y; let nx = 1 - x;
                 let around =
@@ -238,7 +238,7 @@ fn leaf_step(hl: &Hashlife, leafs: [[Leaf; 2]; 2], nstep: u64) -> Leaf {
                 let leaf = leafs[y][x];
                 for i in 0..LEAF_SIZE {
                     let row = (leaf >> (i * LEAF_Y_SHIFT)) & 0xf;
-                    collected |= row << (32 * y + 4 * x + 8 * i);
+                    collected |= (row << (32 * y + 4 * x + 8 * i)) as u64;
                 }
             }
         }
@@ -250,7 +250,8 @@ fn leaf_step(hl: &Hashlife, leafs: [[Leaf; 2]; 2], nstep: u64) -> Leaf {
                     & 0x00_00_00_00_0f_0f_0f_0f;
                 let mut leaf = 0;
                 for i in 0..4 {
-                    leaf |= ((sparse_leaf >> (8 * i)) & 0xf) << (4 * i);
+                    leaf |= (((sparse_leaf >> (8 * i)) & 0xf) << (4 * i)) as
+                        u16;
                 }
                 res |= e4x4(leaf) << (2 * LEAF_Y_SHIFT * y + 2 * LEAF_X_SHIFT *
                     x);
@@ -361,7 +362,12 @@ mod test {
                 let input = hl.rle(input_rle);
                 let output = hl.rle(output_rle);
 
-                assert_eq!(hl.big_step(input.unwrap_node()), output)
+                let input_node = match input.destruct() {
+                    Ok(node) => node,
+                    Err(_) => continue,
+                };
+
+                assert_eq!(hl.big_step(input_node), output)
             }
         });
     }
