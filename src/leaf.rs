@@ -16,7 +16,7 @@ pub use self::leaf_4x4::{Leaf, LG_LEAF_SIZE, LEAF_MASK, QUARTER_LEAF_MASK};
 #[cfg(not(feature = "4x4_leaf"))]
 pub use self::leaf_2x2::{Leaf, LG_LEAF_SIZE, LEAF_MASK, QUARTER_LEAF_MASK};
 
-/// Side length LEAF_SIZE
+/// Side length of `LEAF_SIZE`
 pub const LEAF_SIZE: usize = 1 << LG_LEAF_SIZE;
 pub const LEAF_Y_SHIFT: usize = 4;
 pub const LEAF_X_SHIFT: usize = 1;

@@ -10,7 +10,8 @@ pub fn format_rle(block: &Block) -> String {
     raw_format_rle(&block.to_raw())
 }
 
-/// Raw version of format_rle. Used in implementation of Debug of block::Block.
+/// Raw version of `format_rle`. Used in implementation of Debug of
+/// `block::Block`.
 pub fn raw_format_rle(block: &RawBlock) -> String {
     //let len = 1 << block.lg_size();
     let _ = 1 << block.lg_size_verified().expect("Ill-formatted block");
@@ -158,8 +159,7 @@ fn rle_to_string(rle_data: RLEData) -> String {
 #[cfg(test)]
 #[ignore]
 mod test {
-    use super::{raw_format_rle, format_rle};
-    use block::Block;
+    use super::format_rle;
     use ::Hashlife;
 
     #[test]
