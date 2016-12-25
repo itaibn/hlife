@@ -157,7 +157,6 @@ fn rle_to_string(rle_data: RLEData) -> String {
 }
 
 #[cfg(test)]
-#[ignore]
 mod test {
     use super::format_rle;
     use ::Hashlife;

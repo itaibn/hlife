@@ -140,6 +140,7 @@ fn evolve_leaf(hl: &Hashlife, leafs: [[Leaf; 2]; 2]) -> Leaf {
     hl.small_evolve_cache()[entry]
 }
 
+/// `evolve` specialized to when the corners are all leafs.
 #[cfg(feature = "4x4_leaf")]
 fn evolve_leaf(hl: &Hashlife, leafs: [[Leaf; 2]; 2]) -> Leaf {
     let small_evolve_cache = hl.small_evolve_cache();
@@ -236,24 +237,24 @@ mod test {
 
     #[test]
     fn test_evolve() {
-        let input_rles: [&'static str; 1] = [
-            //"bbo$boo$bbo!",
+        const INPUT_RLES: &'static [&'static str] = &[
+            "bbo$boo$bbo!",
             "x = 8, y = 8, rule = B3/S23\n\
             3ob2o$bo2bobo$2obobo$bobob2o$obobob2o$2bo2b2o$ob2ob2o$bo2b3o!"
         ];
-        let output_rles: [&'static str; 1] = [
-            //"oo$oo!",
-            //b"x = 4, y = 4, rule = B3/S23
-            "o$b2o$o$o!"
+        const OUTPUT_RLES: &'static [&'static str] = &[
+            "oo$oo!",
+            "x = 4, y = 4, rule = B3/S23\n\
+            o$b2o$o$o!"
         ];
 
         Hashlife::with_new(|hl| {
-            for (input_rle, output_rle) in input_rles.iter()
-                                                     .zip(output_rles.iter()) {
-                let input = hl.raw_rle(input_rle);
-                let output = hl.raw_rle(output_rle);
+            for (input_rle, output_rle) in INPUT_RLES.iter()
+                                                     .zip(OUTPUT_RLES.iter()) {
+                let input = hl.rle(input_rle);
+                let output = hl.rle(output_rle);
 
-                assert_eq!(hl.raw_evolve(input.unwrap_node()), output)
+                assert_eq!(hl.big_step(input.unwrap_node()), output)
             }
         });
     }
