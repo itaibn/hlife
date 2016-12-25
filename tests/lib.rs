@@ -31,8 +31,8 @@ fn test_global_instances() {
                 n)).unwrap();
             let out_bytes = read_file(&format!("instances/out{:03}.rle",
                 n)).unwrap();
-            let in_block = hl.raw_block_from_bytes(&in_bytes).unwrap();
-            let out_block = hl.raw_block_from_bytes(&out_bytes).unwrap();
+            let in_block = hl.block_from_bytes(&in_bytes).unwrap();
+            let out_block = hl.block_from_bytes(&out_bytes).unwrap();
             let mut in_pattern = Pattern::new(&hl, in_block);
             let out_pattern = Pattern::new(&hl, out_block);
             in_pattern.step(TEST_TIMES[n]);

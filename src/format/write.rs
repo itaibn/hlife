@@ -1,22 +1,28 @@
 use std::cmp;
 
-use block::Block;
+use ::Block;
+use block::Block as RawBlock;
 use leaf::{Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
 use super::parse::{RLEToken, RLEBuf, State};
 
-/// Transforms a block into RLE format. Panics if the block is ill-formed
+/// Transforms a block into RLE format. Panics if the block is ill-formed.
 pub fn format_rle(block: &Block) -> String {
+    raw_format_rle(&block.to_raw())
+}
+
+/// Raw version of format_rle. Used in implementation of Debug of block::Block.
+pub fn raw_format_rle(block: &RawBlock) -> String {
     //let len = 1 << block.lg_size();
     let _ = 1 << block.lg_size_verified().expect("Ill-formatted block");
     rle_to_string(matrix_to_rle(block_to_matrix(block)))
 }
 
-fn block_to_matrix(block: &Block) -> Vec<Vec<State>> {
+fn block_to_matrix(block: &RawBlock) -> Vec<Vec<State>> {
     match *block {
-        Block::Leaf(l) => leaf_to_matrix(l).iter().map(|row|
+        RawBlock::Leaf(leaf) => leaf_to_matrix(leaf).iter().map(|row|
             row.to_vec()).collect(),
-        Block::Node(n) => {
-            let corners = n.corners();
+        RawBlock::Node(node) => {
+            let corners = node.corners();
             merge_rows(
                 merge_columns(block_to_matrix(&corners[0][0]),
                               block_to_matrix(&corners[0][1])),
@@ -150,8 +156,9 @@ fn rle_to_string(rle_data: RLEData) -> String {
 }
 
 #[cfg(test)]
+#[ignore]
 mod test {
-    use super::format_rle;
+    use super::{raw_format_rle, format_rle};
     use block::Block;
     use ::Hashlife;
 
@@ -161,10 +168,10 @@ mod test {
 
         Hashlife::with_new(|hl| {
             for &test in &tests {
-                let block = hl.raw_rle(test);
+                let block = hl.rle(test);
                 let reformatted = format_rle(&block);
                 println!("{} -> {}", test, reformatted);
-                assert_eq!(Ok(block), hl.raw_block_from_bytes(
+                assert_eq!(Ok(block), hl.block_from_bytes(
                     reformatted.as_bytes()));
             }
         });
@@ -178,11 +185,10 @@ mod test {
         //if cfg!(features = "4x4_leaf")
 
         Hashlife::with_new(|hl| {
-            let mut bc = hl.block_cache();
-            let b0 = Block::Leaf(0x03);
+            let b0 = hl.leaf(0x03);
             assert_eq!(format_rle(&b0),
                 "x = 2, y = 1, rule = B3/S23\n2o!\n");
-            let b1 = Block::Node(bc.node([[b0, b0], [b0, b0]]));
+            let b1 = hl.node_block([[b0, b0], [b0, b0]]);
             assert_eq!(format_rle(&b1),
                 "x = 4, y = 3, rule = B3/S23\n4o2$4o!\n");
         });

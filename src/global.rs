@@ -1,6 +1,5 @@
 
-use ::Hashlife;
-use block::Block;
+use ::{Block, Hashlife};
 use util::{log2_upper, make_2x2};
 
 #[derive(Debug)]
@@ -43,7 +42,7 @@ impl<'a, 'b> Pattern<'a, 'b> {
             self.encase();
         }
         let reencase = encase(self.hl, self.block);
-        self.block = self.hl.raw_step_pow2(reencase.unwrap_node(), lognsteps);
+        self.block = self.hl.step_pow2(reencase.unwrap_node(), lognsteps);
     }
 
     fn encase(&mut self) {
@@ -77,14 +76,14 @@ impl<'a, 'b> PartialEq for Pattern<'a, 'b> {
 fn encase<'a>(hl: &Hashlife<'a>, b: Block<'a>) -> Block<'a> {
     // Assumes b is a node.
     let n = b.unwrap_node();
-    hl.raw_node_block(make_2x2(|y0, x0| {
-        hl.raw_node_block(make_2x2(|y1, x1| {
+    hl.node_block(make_2x2(|y0, x0| {
+        hl.node_block(make_2x2(|y1, x1| {
             let x = 2*x0 + x1;
             let y = 2*y0 + y1;
             if 0 < x && x < 3 && 0 < y && y < 3 {
                 n.corners()[y-1][x-1]
             } else {
-                hl.raw_blank(b.lg_size() - 1)
+                hl.blank(b.lg_size() - 1)
             }
         }))
     }))
@@ -102,7 +101,7 @@ mod test {
     fn parse<'a, 'b>(hl: &'a Hashlife<'b>, bytes: &'static str)
         -> Pattern<'a, 'b> {
 
-        Pattern::new(hl, hl.raw_rle(bytes))
+        Pattern::new(hl, hl.rle(bytes))
     }
 
     #[test]

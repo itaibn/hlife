@@ -218,9 +218,9 @@ impl<'a> Block<'a> {
 
 impl<'a> fmt::Debug for Block<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use format::write::format_rle;
+        use format::write::raw_format_rle;
         
-        let as_string = format_rle(self);
+        let as_string = raw_format_rle(self);
         write!(f, "{}", as_string)
     }
 }

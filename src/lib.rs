@@ -99,7 +99,7 @@ impl<'a> Hashlife<'a> {
         let elem_lg_size = elems[0][0].lg_size();
         make_2x2(|i, j| assert!(elems[i][j].lg_size() == elem_lg_size,
             "Sizes don't match in new node"));
-        let raw_elems = make_2x2(|i, j| elems[i][j].raw());
+        let raw_elems = make_2x2(|i, j| elems[i][j].to_raw());
 
         Node {
             raw: self.raw_node(raw_elems),
@@ -118,6 +118,15 @@ impl<'a> Hashlife<'a> {
     /// match.
     pub fn node_block(&self, elems: [[Block<'a>; 2]; 2]) -> Block<'a> {
         Block::from_node(self.node(elems))
+    }
+
+    /// Creates leaf block
+    pub fn leaf(&self, leaf: Leaf) -> Block<'a> {
+        Block {
+            raw: RawBlock::Leaf(leaf),
+            hl: *self,
+            lg_size: LG_LEAF_SIZE,
+        }
     }
 
     /// Reference to underlying block cache (I don't remember why I made it
@@ -213,6 +222,17 @@ impl<'a> Hashlife<'a> {
         evolve::step_pow2(self, node, lognsteps)
     }
 
+    /// Return sidelength 2^(n-1) block at the center of node after it evolved
+    /// for 2^lognsteps steps.
+    pub fn step_pow2(&self, node: Node<'a>, lognsteps: usize) -> Block<'a> { 
+        let raw_node = self.raw_step_pow2(node.to_raw(), lognsteps);
+        Block {
+            raw: raw_node,
+            hl: *self,
+            lg_size: node.lg_size() - 1
+        }
+    }
+
     // Temp interface
     /// Return a block with all cells set randomly of size 2^(depth+1)
     pub fn raw_random_block<R:rand::Rng>(&self, rng: &mut R, depth: usize) ->
@@ -237,7 +257,7 @@ impl<'a> fmt::Debug for HashlifeCache<'a> {
 }
 
 impl<'a> Node<'a> {
-    pub fn raw(&self) -> RawNode<'a> {
+    pub fn to_raw(&self) -> RawNode<'a> {
         self.raw
     }
 
@@ -258,8 +278,16 @@ impl<'a> Node<'a> {
     }
 }
 
+impl<'a> PartialEq for Node<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.raw == other.raw
+    }
+}
+
+impl<'a> Eq for Node<'a> {}
+
 impl<'a> Block<'a> {
-    pub fn raw(&self) -> RawBlock<'a> {
+    pub fn to_raw(&self) -> RawBlock<'a> {
         self.raw
     }
 
@@ -298,6 +326,14 @@ impl<'a> Block<'a> {
         self.raw.is_blank()
     }
 }
+
+impl<'a> PartialEq for Block<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.raw == other.raw
+    }
+}
+
+impl<'a> Eq for Block<'a> {}
 
 #[cfg(test)]
 mod test {

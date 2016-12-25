@@ -3,11 +3,11 @@ mod build_rle;
 mod build_mc;
 pub mod write;
 
-use ::Hashlife;
-use block::Block;
+use ::{Block, Hashlife};
+use block::Block as RawBlock;
 
 impl<'a> Hashlife<'a> {
-    pub fn raw_block_from_bytes(&self, bytes: &[u8]) -> Result<Block<'a>, ()> {
+    pub fn block_from_bytes(&self, bytes: &[u8]) -> Result<Block<'a>, ()> {
         use self::parse::{parse_file, ParseOut};
         use self::build_rle::block_from_rle;
         use self::build_mc::build_mc;
@@ -29,10 +29,21 @@ impl<'a> Hashlife<'a> {
         }
     }
 
+    pub fn raw_block_from_bytes(&self, bytes: &[u8]) -> Result<RawBlock<'a>, ()>
+    {
+        self.block_from_bytes(bytes).map(|b| b.to_raw())
+    }
+
     /// Simpler API for generating a block from a string; useful for quickly
     /// generating a specific block, as in testing.
-    pub fn raw_rle(&self, pat: &'static str) -> Block<'a> {
+    pub fn raw_rle(&self, pat: &'static str) -> RawBlock<'a> {
         self.raw_block_from_bytes(pat.as_bytes()).unwrap()
+    }
+
+    /// Simpler API for generating a block from a string; useful for quickly
+    /// generating a specific block, as in testing.
+    pub fn rle(&self, pat: &'static str) -> Block<'a> {
+        self.block_from_bytes(pat.as_bytes()).unwrap()
     }
 }
 

@@ -1,5 +1,4 @@
-use ::Hashlife;
-use block::Block;
+use ::{Block, Hashlife};
 use leaf::LG_LEAF_SIZE;
 use util::try_make_2x2;
 
@@ -20,12 +19,12 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
                         {(0,0) => b0, (0,1) => b1, (1,0) => b2, (1,1) => b3,
                          _ => unreachable!()};
                     if index == 0 {
-                        Ok(hl.raw_blank(d-1))
+                        Ok(hl.blank(d-1))
                     } else {
                         Ok(*try!(table.get(index-1).ok_or(())))
                     }
                 }));
-                hl.raw_node_block(elems)
+                hl.node_block(elems)
             }
         };
         debug_assert!(new_block.lg_size_verified().is_ok());
