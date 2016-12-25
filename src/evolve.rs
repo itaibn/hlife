@@ -1,7 +1,11 @@
+// In functions below, `depth` is the depth of *output* block. depth == 0 <=>
+// block is leaf.
+
 use ::Hashlife;
 use block::{Block as RawBlock, Node as RawNode};
 use leaf::{
     Leaf,
+    LG_LEAF_SIZE,
     LEAF_SIZE,
     QUARTER_LEAF_MASK,
     LEAF_Y_SHIFT,
@@ -175,18 +179,87 @@ fn evolve_leaf(hl: &Hashlife, leafs: [[Leaf; 2]; 2]) -> Leaf {
     eenw | eene << 2 | eesw << 8 | eese << 10
 }
 
-/*
-    fn leaf_step(&self, leafs: [[Leaf; 2]; 2], nstep: usize) -> Leaf {
-        assert!(nstep < LEAF_SIZE);
-        self.leaf_step_impl(leafs, nstep)
+#[cfg(not(feature = "4x4_leaf"))]
+fn leaf_step(_: &Hashlife, leafs: [[Leaf; 2]; 2], nstep: u64) -> Leaf {
+    // Equivalent to (nstep < LEAF_SIZE/2)
+    debug_assert!(nstep == 0);
+    let mut res = 0;
+    for y in 0..2 {
+        for x in 0..2 {
+            let quarter = (leafs[y][x] >> ((1-y) * LEAF_Y_SHIFT + (1-x) * LEAF_X_SHIFT)) &
+                QUARTER_LEAF_MASK;
+            res |= quarter << (y * LEAF_Y_SHIFT + x * LEAF_X_SHIFT);
+        }
     }
-*/
+    res
+}
 
-//    #[cfg(not(feature = "4x4_leaf"))]
-//    fn leaf_step(&self, leafs: [[Leaf; 2]; 2], nstep: usize) -> Leaf {
-//        if nstep == 0 {
-//            leaf_step
-    
+// TODO: This is a mess. Fix it.
+#[cfg(feature = "4x4_leaf")]
+fn leaf_step(hl: &Hashlife, leafs: [[Leaf; 2]; 2], nstep: u64) -> Leaf {
+    // LEAF_SIZE / 2 == 2
+    debug_assert!(nstep < LEAF_SIZE / 2);
+
+    if nstep == 0 {
+        let mut res = 0;
+        for y in 0..2 {
+            for x in 0..2 {
+                let quarter = (leafs[y][x] >> (2 * (1-y) * LEAF_Y_SHIFT + 2 *
+                    (1-x) * LEAF_X_SHIFT)) & QUARTER_LEAF_MASK;
+                res |= quarter << (2 * y * LEAF_Y_SHIFT + 2 * x * LEAF_X_SHIFT);
+            }
+        }
+        res
+    } else {
+        let small_evolve_cache = hl.small_evolve_cache();
+        let e4x4 = |l: Leaf| small_evolve_cache[l as usize] as Leaf;
+
+        /*
+        for y in 0..2 {
+            for x in 0.2 {
+                let ny = 1 - y; let nx = 1 - x;
+                let around =
+                      (((leafs[y][x] >> (ny * LEAF_Y_SHIFT + nx * LEAF_X_SHIFT))
+                        & 0x0777) << (y * LEAF_Y_SHIFT + x * LEAF_X_SHIFT))
+                    | (((leafs[y][nx] >> 
+        */
+
+        let mut collected: u64 = 0;
+        debug_assert!(LEAF_X_SHIFT == 1);
+        for y in 0..2 {
+            for x in 0.2 {
+                /*
+                let ny = 1 - y; let nx = 1 - x;
+                let around =
+                      (((leafs[y][x] >> (ny * LEAF_Y_SHIFT + nx * LEAF_X_SHIFT))
+                        & 0x0777) << (y * LEAF_Y_SHIFT + x * LEAF_X_SHIFT))
+                    | (((leafs[y][nx] >> 
+                */
+                let leaf = leafs[y][x];
+                for i in 0..LEAF_SIZE {
+                    let row = (leaf >> (i * LEAF_Y_SHIFT)) & 0xf;
+                    collected |= row << (32 * y + 4 * x + 8 * i);
+                }
+            }
+        }
+
+        let mut res: Leaf = 0;
+        for y in 0..2 {
+            for x in 0..2 {
+                let sparse_leaf = (collected >> (9 + 16 * y + 2 * x))
+                    & 0x00_00_00_00_0f_0f_0f_0f;
+                let mut leaf = 0;
+                for i in 0..4 {
+                    leaf |= ((sparse_leaf >> (8 * i)) & 0xf) << (4 * i);
+                }
+                res |= e4x4(leaf) << (2 * LEAF_Y_SHIFT * y + 2 * LEAF_X_SHIFT *
+                    x);
+            }
+        }
+        res
+    }
+}
+
 #[cfg(not(feature = "4x4_leaf"))]
 pub fn step_pow2<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lognsteps: usize) ->
     RawBlock<'a> {
@@ -215,13 +288,37 @@ pub fn step_pow2<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lognsteps: usize) ->
     unimplemented!()
 }
 
-/*
-pub fn step<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lgsize: usize, lognsteps:
-    u64) -> RawBlock<'a> {
+pub fn step<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize, nsteps: u64)
+    -> RawBlock<'a> {
 
-    i
+    debug_assert!(nsteps < 1 << (depth + LG_LEAF_SIZE - 1));
+
+    if depth == 0 {
+        let corners = make_2x2(|y, x| node.corners()[y][x].unwrap_leaf());
+        RawBlock::Leaf(leaf_step(hl, corners, nsteps))
+    } else {
+        // Highest-order shift
+        let ho_shift = depth + LG_LEAF_SIZE - 2;
+        // Highest-order bit
+        let ho_bit = nsteps >> ho_shift;
+        // Remaining bits
+        let rem = nsteps & ((1 << ho_shift) - 1);
+
+        let intermediate = make_3x3(|y, x| {
+            let pre_inter_block = subblock(hl, node, y as u8, x as u8);
+            let pre_inter = pre_inter_block.unwrap_node();
+            if ho_bit == 1 {
+                evolve(hl, pre_inter, depth - 1)
+            } else {
+                subblock(hl, pre_inter, 1, 1)
+            }
+        });
+        hl.raw_node_block(make_2x2(|y, x| {
+            let pre_res = make_2x2(|i, j| intermediate[i+y][j+x]);
+            step(hl, hl.raw_node(pre_res), depth-1, rem)
+        }))
+    }
 }
-*/
 
 #[cfg(test)]
 mod test {
