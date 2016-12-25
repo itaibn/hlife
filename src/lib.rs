@@ -146,7 +146,7 @@ impl<'a> Hashlife<'a> {
     ///
     /// This is the raw version of big stepping.
     pub fn raw_evolve(&self, node: RawNode<'a>) -> RawBlock<'a> {
-        evolve::evolve(self, node)
+        evolve::evolve(self, node, node.lg_size() - LG_LEAF_SIZE - 1)
     }
 
     /// Given 2^(n+1)x2^(n+1) node `node`, progress it 2^(n-1) generations and
@@ -156,7 +156,7 @@ impl<'a> Hashlife<'a> {
     /// This is the normal version of big stepping.
     pub fn big_step(&self, node: Node<'a>) -> Block<'a> {
         Block {
-            raw: evolve::evolve(self, node.raw),
+            raw: self.raw_evolve(node.to_raw()),
             hl: *self,
             lg_size: node.lg_size - 1, 
         }

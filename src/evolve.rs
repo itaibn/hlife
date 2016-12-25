@@ -41,7 +41,9 @@ pub fn mk_small_evolve_cache() -> [u8; 1<<16] {
 /// Given 2^(n+1)x2^(n+1) node `node`, progress it 2^(n-1) generations and
 /// return 2^nx2^n block in the center. This is the main component of the
 /// Hashlife algorithm.
-pub fn evolve<'a>(hl: &Hashlife<'a>, node: RawNode<'a>) -> RawBlock<'a> {
+pub fn evolve<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize) ->
+    RawBlock<'a> {
+
     let elem = node.corners();
 
     node.evolve_cache().eval(move ||
@@ -55,20 +57,20 @@ pub fn evolve<'a>(hl: &Hashlife<'a>, node: RawNode<'a>) -> RawBlock<'a> {
                 // combine them.
                 let subblock = subblock(hl, node, i as u8, j as u8);
                 let subnode = subblock.unwrap_node();
-                evolve(hl, subnode)
+                evolve(hl, subnode, depth - 1)
             });
-            evolve_finish(hl, intermediates)
+            evolve_finish(hl, intermediates, depth)
         }
     )
 }
 
 /// Evolve (3*2^n)x(3*2^n) block (encoded as a 3x3 array of 2^nx2^n blocks)
 /// 2^(n-1) steps and return the 2^nx2^n block in the middle
-fn evolve_finish<'a>(hl: &Hashlife<'a>, parts: [[RawBlock<'a>; 3]; 3]) ->
-    RawBlock<'a> {
+fn evolve_finish<'a>(hl: &Hashlife<'a>, parts: [[RawBlock<'a>; 3]; 3], depth:
+    usize) -> RawBlock<'a> {
 
     let res_components = make_2x2(|i, j| {
-        evolve(hl, hl.raw_node(make_2x2(|y, x| parts[i+y][j+x])))
+        evolve(hl, hl.raw_node(make_2x2(|y, x| parts[i+y][j+x])), depth - 1)
     });
     hl.raw_node_block(res_components)
 }
@@ -192,7 +194,7 @@ pub fn step_pow2<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lognsteps: usize) ->
     assert!(lognsteps <= node.lg_size() - 2);
 
     if lognsteps == node.lg_size() - 2 {
-        evolve(hl, node)
+        hl.raw_evolve(node)
     } else {
         let parts = make_3x3(|i, j| {
             subblock(hl,
@@ -212,6 +214,14 @@ pub fn step_pow2<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lognsteps: usize) ->
 
     unimplemented!()
 }
+
+/*
+pub fn step<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lgsize: usize, lognsteps:
+    u64) -> RawBlock<'a> {
+
+    i
+}
+*/
 
 #[cfg(test)]
 mod test {
