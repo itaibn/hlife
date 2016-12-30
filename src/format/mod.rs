@@ -37,13 +37,15 @@ impl<'a> Hashlife<'a> {
     /// Simpler API for generating a block from a string; useful for quickly
     /// generating a specific block, as in testing.
     pub fn raw_rle(&self, pat: &'static str) -> RawBlock<'a> {
-        self.raw_block_from_bytes(pat.as_bytes()).unwrap()
+        self.raw_block_from_bytes(pat.as_bytes()).expect("Error parsing static \
+            RLE")
     }
 
     /// Simpler API for generating a block from a string; useful for quickly
     /// generating a specific block, as in testing.
     pub fn rle(&self, pat: &'static str) -> Block<'a> {
-        self.block_from_bytes(pat.as_bytes()).unwrap()
+        self.block_from_bytes(pat.as_bytes()).expect("Error parsing static \
+            RLE")
     }
 }
 
