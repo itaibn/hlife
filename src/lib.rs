@@ -225,11 +225,27 @@ impl<'a> Hashlife<'a> {
     /// Return sidelength 2^(n-1) block at the center of node after it evolved
     /// for 2^lognsteps steps.
     pub fn step_pow2(&self, node: Node<'a>, lognsteps: usize) -> Block<'a> { 
+        assert!(lognsteps + 2 <= node.lg_size());
+
         let raw_node = self.raw_step_pow2(node.to_raw(), lognsteps);
         Block {
             raw: raw_node,
             hl: *self,
             lg_size: node.lg_size() - 1
+        }
+    }
+
+    /// Return sidelength 2^(n-1) block at the center of the node after it
+    /// evolved `nstep` steps. Requires `nstep < 2**(n-2)`.
+    pub fn step(&self, node: Node<'a>, nstep: u64) -> Block<'a> {
+        assert!(nstep < 1 << (node.lg_size() - 2));
+
+        let raw = evolve::step(self, node.to_raw(), node.lg_size() -
+            LG_LEAF_SIZE - 1, nstep);
+        Block {
+            raw: raw,
+            hl: *self,
+            lg_size: node.lg_size() - 1,
         }
     }
 

@@ -128,7 +128,6 @@ fn subblock_leaf<'a>(_: &Hashlife<'a>, node: RawNode<'a>, y: usize, x: usize) ->
                 + i * HALF_LEAF * LEAF_X_SHIFT;
             let cell = QUARTER_LEAF_MASK & (source_leaf >> source_shift);
             output_leaf |= cell << output_shift;
-            println!("i {} j {} output_leaf {:x}", i, j, output_leaf);
         }
     }
     RawBlock::Leaf(output_leaf)
@@ -238,7 +237,7 @@ fn leaf_step(hl: &Hashlife, leafs: [[Leaf; 2]; 2], nstep: u64) -> Leaf {
                 let leaf = leafs[y][x];
                 for i in 0..LEAF_SIZE {
                     let row = (leaf >> (i * LEAF_Y_SHIFT)) & 0xf;
-                    collected |= (row << (32 * y + 4 * x + 8 * i)) as u64;
+                    collected |= (row as u64) << (32 * y + 4 * x + 8 * i);
                 }
             }
         }
@@ -412,6 +411,16 @@ mod test {
             assert_eq!(hl.raw_subblock(n, 0, 1), hl.raw_rle("2$4o!"));
             assert_eq!(hl.raw_subblock(n, 1, 0), hl.raw_rle("4o!"));
             assert_eq!(hl.raw_subblock(n, 0, 2), hl.raw_rle("2$3o!"));
+        });
+    }
+
+    #[test]
+    fn test_step() {
+        Hashlife::with_new(|hl| {
+            assert_eq!(hl.step(hl.rle("3$2b3o!").unwrap_node(), 1),
+                hl.rle("bo$bo$bo!"));
+            assert_eq!(hl.step(hl.rle("8o$8o$8o$8o$8o$8o$8o$8o!").unwrap_node(),
+                1), hl.rle("x=4,y=5,rule=B3/S34\n4b!"));
         });
     }
 }
