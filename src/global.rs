@@ -2,35 +2,36 @@
 use ::{Block, Hashlife};
 use util::{log2_upper, make_2x2};
 
+/// Infinite pattern which is dead in all but a finite area.
 #[derive(Debug)]
-pub struct Pattern<'a, 'b:'a> {
-    hl: &'a Hashlife<'b>,
-    block: Block<'b>,
+pub struct Pattern<'a> {
+    block: Block<'a>,
     dead_space: u64,
 }
 
-impl<'a, 'b> Pattern<'a, 'b> {
+impl<'a> Pattern<'a> {
     // `block` must be a node
-    pub fn new(hl: &'a Hashlife<'b>, block: Block<'b>) -> Self {
-        Pattern {hl: hl, block: block, dead_space: 0}
+    pub fn new(block: Block<'a>) -> Self {
+        assert!(block.destruct().is_ok());
+        Pattern {block: block, dead_space: 0}
     }
 
-    pub fn block(&self) -> Block<'b> {
+    pub fn block(&self) -> Block<'a> {
         self.block
     }
 
-    pub fn step(&mut self, mut nsteps: usize) {
-        let mut pow2 = 0;
-        // Maybe better in opposite order
-        while nsteps > 0 {
-            if nsteps & 1 > 0 {
-                self.step_pow2(pow2);
-            }
-            nsteps /= 2;
-            pow2 += 1;
+    pub fn step(&mut self, nsteps: u64) {
+        let new_length = self.length() + 2 * nsteps;
+        let lg_size_needed = log2_upper(new_length) as usize + 1;
+        let mut block = self.block;
+        while block.lg_size() < lg_size_needed {
+            block = encase(self.hl(), block);
         }
+        self.block = self.hl().step(block.unwrap_node(), nsteps);
+        self.dead_space = (1 << self.block.lg_size()) - new_length;
     }
 
+/*
     fn step_pow2(&mut self, lognsteps: usize) {
         self.step_pow2_1(lognsteps);
     }
@@ -41,24 +42,29 @@ impl<'a, 'b> Pattern<'a, 'b> {
         while self.block.lg_size() < lgsize_needed {
             self.encase();
         }
-        let reencase = encase(self.hl, self.block);
-        self.block = self.hl.step_pow2(reencase.unwrap_node(), lognsteps);
+        let reencase = encase(self.hl(), self.block);
+        self.block = self.hl().step_pow2(reencase.unwrap_node(), lognsteps);
     }
 
     fn encase(&mut self) {
         let lg_size = self.block.lg_size();
-        self.block = encase(self.hl, self.block);
+        self.block = encase(self.hl(), self.block);
         self.dead_space += 1 << lg_size;
     }
+*/
 
     fn length(&self) -> u64 {
         (1 << self.block.lg_size()) - 2 * self.dead_space
     }
+
+    fn hl(&self) -> Hashlife<'a> {
+        self.block.hashlife_instance()
+    }
 }
 
-impl<'a, 'b> Eq for Pattern<'a, 'b> { }
+impl<'a> Eq for Pattern<'a> { }
 
-impl<'a, 'b> PartialEq for Pattern<'a, 'b> {
+impl<'a> PartialEq for Pattern<'a> {
     fn eq(&self, other: &Self) -> bool {
         use std::mem::swap;
 
@@ -67,13 +73,13 @@ impl<'a, 'b> PartialEq for Pattern<'a, 'b> {
             swap(&mut a, &mut b);
         }
         while b.lg_size() > a.lg_size() {
-            a = encase(self.hl, a);
+            a = encase(self.hl(), a);
         }
         a == b
     }
 }
 
-fn encase<'a>(hl: &Hashlife<'a>, b: Block<'a>) -> Block<'a> {
+fn encase<'a>(hl: Hashlife<'a>, b: Block<'a>) -> Block<'a> {
     // Assumes b is a node.
     let n = b.unwrap_node();
     hl.node_block(make_2x2(|y0, x0| {
@@ -98,18 +104,16 @@ mod test {
     use super::Pattern;
     use ::Hashlife;
 
-    fn parse<'a, 'b>(hl: &'a Hashlife<'b>, bytes: &'static str)
-        -> Pattern<'a, 'b> {
-
-        Pattern::new(hl, hl.rle(bytes))
+    fn parse<'a>(hl: Hashlife<'a>, bytes: &'static str) -> Pattern<'a> {
+        Pattern::new(hl.rle(bytes))
     }
 
     #[test]
     fn test_blinker_1gen() {
         Hashlife::with_new(|hl| {
-            let mut blinker_in = parse(&hl, "$3o!");
+            let mut blinker_in = parse(hl, "2$2b3o!");
             blinker_in.step(1);
-            let blinker_out = parse(&hl, "bo$bo$bo!");
+            let blinker_out = parse(hl, "$3bo$3bo$3bob!");
             if blinker_in != blinker_out {
                 use format::write::format_rle;
                 panic!("{}\n{}", format_rle(&blinker_in.block()),

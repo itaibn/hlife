@@ -1,7 +1,6 @@
 extern crate hlife;
 
 use hlife::Hashlife;
-#[cfg(not(feature = "4x4_leaf"))]
 use hlife::global::Pattern;
 use hlife::format::write::format_rle;
 
@@ -10,14 +9,13 @@ use std::fs::File;
 use std::io::Read;
 use std::process::exit;
 
-#[cfg(not(feature = "4x4_leaf"))]
 fn main() {
     let args: Vec<_> = args().collect();
     if args.len() != 3 {
         println!("{} input.rle gens", &args[0]);
         exit(1);
     }
-    let gens = usize::from_str_radix(&args[2], 10).unwrap_or_else(|_| {
+    let gens = u64::from_str_radix(&args[2], 10).unwrap_or_else(|_| {
         println!(
             "Error: Second argument gens must be a nonnegative integer: {}",
             &args[2]);
@@ -38,14 +36,8 @@ fn main() {
             println!("Badly formatted RLE in {}", &args[1]);
             exit(1);
         });
-        let mut pattern = Pattern::new(&hl, block);
+        let mut pattern = Pattern::new(block);
         pattern.step(gens);
         print!("{}", format_rle(&pattern.block()));
     });
-}
-
-#[cfg(feature = "4x4_leaf")]
-fn main() {
-    println!("Crucial features still don't work with 4x4 leafs, so the\
-        executable is disabled");
 }

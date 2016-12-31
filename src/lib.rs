@@ -277,6 +277,10 @@ impl<'a> Node<'a> {
         self.raw
     }
 
+    pub fn hashlife_instance(&self) -> Hashlife<'a> {
+        self.hl
+    }
+
     pub fn evolve(&self) -> Block<'a> {
         self.hl.block_from_raw(self.hl.raw_evolve(self.raw))
     }
@@ -307,6 +311,9 @@ impl<'a> Block<'a> {
         self.raw
     }
 
+    pub fn hashlife_instance(&self) -> Hashlife<'a> {
+        self.hl
+    }
 
     pub fn from_node(node: Node<'a>) -> Self {
         Block {
