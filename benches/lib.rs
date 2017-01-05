@@ -42,9 +42,9 @@ fn test_in_out_pair(in_rle: &[u8], out_rle: &[u8], steps: u64) {
     Hashlife::with_new(|hl| {
         let in_block = hl.block_from_bytes(&in_rle).unwrap();
         let out_block = hl.block_from_bytes(&out_rle).unwrap();
-        let mut in_pattern = Pattern::new(&hl, in_block);
-        let out_pattern = Pattern::new(&hl, out_block);
-        in_pattern.step(steps as usize);
+        let mut in_pattern = Pattern::new(in_block);
+        let out_pattern = Pattern::new(out_block);
+        in_pattern.step(steps);
         assert_eq!(in_pattern, out_pattern);
     });
 }

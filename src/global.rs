@@ -12,7 +12,7 @@ pub struct Pattern<'a> {
 impl<'a> Pattern<'a> {
     // `block` must be a node
     pub fn new(block: Block<'a>) -> Self {
-        assert!(block.destruct().is_ok());
+        assert!(block.destruct().is_ok(), "Pattern block must be a node");
         Pattern {block: block, dead_space: 0}
     }
 
