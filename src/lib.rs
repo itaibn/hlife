@@ -249,19 +249,13 @@ impl<'a> Hashlife<'a> {
         }
     }
 
-    // Temp interface
-    /// Return a block with all cells set randomly of size 2^(depth+1)
-    pub fn raw_random_block<R:rand::Rng>(&self, rng: &mut R, depth: usize) ->
-        RawBlock<'a> {
-        
-        let lg_size = depth + 1;
-
+    /// Return a block with all cells set randomly of size `2 ** lg_size`.
+    pub fn random_block<R:rand::Rng>(&self, rng: &mut R, lg_size: usize) -> Block<'a> {
         if lg_size == LG_LEAF_SIZE {
             let leaf = rng.gen::<Leaf>() & LEAF_MASK;
-            RawBlock::Leaf(leaf)
+            self.leaf(leaf)
         } else {
-            self.raw_node_block(make_2x2(|_,_| self.raw_random_block(rng,
-                depth-1)))
+            self.node_block(make_2x2(|_,_| self.random_block(rng, lg_size-1)))
         }
     }
 }
