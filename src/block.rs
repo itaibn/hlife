@@ -38,6 +38,10 @@ use leaf::{Leaf, LG_LEAF_SIZE};
 /// themselves only contain references to one another (with lifetime 'a).
 pub struct CABlockCache<'a> (HashMap<u64, Box<HeapNode<'a>>, HashmapState>);
 
+/// Error type for hash collision
+#[derive(Debug)]
+pub struct HashCollision;
+
 impl<'a> CABlockCache<'a> {
     /// Create a new `CABlockCache` and pass it to `f`.
     /// This indirect initialization approach is necessary since the
@@ -62,11 +66,26 @@ impl<'a> CABlockCache<'a> {
 
     /// Return a reference to a node with `elems` as corners, creating this node
     /// if it did not already exist.
+    ///
+    /// Panics
+    /// ====== 
+    ///
+    /// Panics at a hash collision
     pub fn node(&mut self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
+        self.node_nopanic(elems).unwrap()
+    }
+
+    /// Like `node`, but returns a result to handle hash collisions instead of
+    /// panicking.
+    pub fn node_nopanic(&mut self, elems: [[Block<'a>; 2]; 2]) ->
+        Result<Node<'a>, HashCollision> {
+
         let hash = hash(&elems);
         let blockref: &HeapNode<'a> = &**self.0.entry(hash).or_insert_with(||
             Box::new(HeapNode::from_elems_and_hash(elems, hash)));
-        assert!(blockref.corners == elems, "Hash collision");
+        if blockref.corners != elems {
+            return Err(HashCollision);
+        }
         // [Update: No longer the only unsafe line, there's another line in
         // lib.rs]
         //
@@ -78,7 +97,7 @@ impl<'a> CABlockCache<'a> {
         // that the interface of `CABlockCache` does not allow removing entries
         // from the underlying hashmap, this box will live as long as the
         // underlying hashmap, so extending the lifetime to 'a is safe.
-        unsafe {&*(blockref as *const _)}
+        unsafe {Ok(&*(blockref as *const _))}
     }
 }
 
