@@ -137,7 +137,7 @@ fn subblock_leaf<'a>(_: &Hashlife<'a>, node: RawNode<'a>, y: usize, x: usize) ->
 #[cfg(not(feature = "4x4_leaf"))]
 #[inline]
 fn evolve_leaf(hl: &Hashlife, leafs: [[Leaf; 2]; 2]) -> Leaf {
-    debug_assert!(LEAF_SIZE == 2);
+    debug_assert_eq!(LEAF_SIZE, 2);
     let entry = leafs[0][0] as usize
         + ((leafs[0][1] as usize) << 2)
         + ((leafs[1][0] as usize) << 8)
@@ -181,7 +181,7 @@ fn evolve_leaf(hl: &Hashlife, leafs: [[Leaf; 2]; 2]) -> Leaf {
 #[cfg(not(feature = "4x4_leaf"))]
 fn leaf_step(_: &Hashlife, leafs: [[Leaf; 2]; 2], nstep: u64) -> Leaf {
     // Equivalent to (nstep < LEAF_SIZE/2)
-    debug_assert!(nstep == 0);
+    debug_assert_eq!(nstep, 0);
     let mut res = 0;
     for y in 0..2 {
         for x in 0..2 {

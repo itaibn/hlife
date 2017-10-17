@@ -2,6 +2,8 @@ use std::str::{self, FromStr};
 
 use nom::*;
 
+// CFG for avoid clippy warning
+#[cfg(test)]
 macro_rules! assert_parse {
     ($str:expr => $parser:expr, $res:expr) => {
         match $parser($str) {

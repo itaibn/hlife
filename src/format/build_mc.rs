@@ -30,7 +30,7 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
         debug_assert!(new_block.lg_size_verified().is_ok());
         table.push(new_block);
     }
-    assert!(table.len() == mclines.len());
+    assert_eq!(table.len(), mclines.len());
     debug!("Table: {:?}", table);
     //println!("{:?}", table);
     table.last().cloned().ok_or(())

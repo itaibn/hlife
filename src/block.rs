@@ -104,7 +104,7 @@ impl<'a> CABlockCache<'a> {
 // Just in case, clear CABlockCache before dropping it.
 impl<'a> Drop for CABlockCache<'a> {
     fn drop(&mut self) {
-        for (_, block) in &mut self.0 {
+        for block in self.0.values_mut() {
             block.corners = [[Block::Leaf(0); 2]; 2];
         }
     }

@@ -97,7 +97,7 @@ impl<'a> Hashlife<'a> {
     /// Creates a node `elems` as corners. Panics with sizes don't match.
     pub fn node(&self, elems: [[Block<'a>; 2]; 2]) -> Node<'a> {
         let elem_lg_size = elems[0][0].lg_size();
-        make_2x2(|i, j| assert!(elems[i][j].lg_size() == elem_lg_size,
+        make_2x2(|i, j| assert_eq!(elems[i][j].lg_size(), elem_lg_size,
             "Sizes don't match in new node"));
         let raw_elems = make_2x2(|i, j| elems[i][j].to_raw());
 

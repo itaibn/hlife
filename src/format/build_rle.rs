@@ -55,7 +55,6 @@ pub fn block_from_rle<'a>(hl: &Hashlife<'a>, rle: &RLE) -> Result<Block<'a>,
     matrix.resize(res_side, empty_row);
 
     let matrix = matrix.iter().map(|row| &**row).collect();
-    //println!("depth {}", res_depth);
     Ok(block_from_matrix(hl, res_depth, matrix))
 }
 

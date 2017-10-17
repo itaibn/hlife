@@ -61,7 +61,7 @@ fn merge_rows<A>(mut top: Vec<Vec<A>>, mut bottom: Vec<Vec<A>>) -> Vec<Vec<A>> {
 }
 
 fn merge_columns<A>(left: Vec<Vec<A>>, right: Vec<Vec<A>>) -> Vec<Vec<A>> {
-    debug_assert!(left.len() == right.len());
+    debug_assert_eq!(left.len(), right.len());
 
     left.into_iter()
         .zip(right)
