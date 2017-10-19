@@ -5,3 +5,4 @@ authors = ["Itai Bar-Natan <itaibn3141@gmail.com>"]
 
 [dependencies]
 hlife = { path = ".." }
+clap = "2.26.2"
