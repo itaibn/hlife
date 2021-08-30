@@ -13,6 +13,7 @@ xor_hasher = []
 [dependencies]
 fnv = "1.0.2"
 nom = "1.2.0"
+num = "0.4.0"
 rand = "0.3"
 
 clippy = {version = "*", optional = true}

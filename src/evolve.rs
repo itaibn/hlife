@@ -1,6 +1,8 @@
 // In functions below, `depth` is the depth of *output* block. depth == 0 <=>
 // block is leaf.
 
+use num::{One, FromPrimitive, ToPrimitive, BigUint as U};
+
 use ::Hashlife;
 use block::{Block as RawBlock, Node as RawNode};
 use leaf::{
@@ -12,6 +14,9 @@ use leaf::{
     LEAF_X_SHIFT,
 };
 use util::{make_2x2, make_3x3};
+
+// Temp for bignum conversion
+//type U = u64;
 
 /// A table containing the 2x2 center block after one generation for all
 /// possible 4x4 blocks.
@@ -56,9 +61,10 @@ pub fn evolve<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize) ->
             RawBlock::Leaf(evolve_leaf(hl, elem_leafs))
         } else {
             let intermediates = make_3x3(|i, j| {
-                // I don't know we need two separate `let`
-                // statements, but the borrow checker complains if I
-                // combine them.
+                // subblock needs to be defined as a separate variable because
+                // strangely RawBlock::unwrap_node takes and returns a reference
+                // so the lifetime of subblock needs to be long enough. TODO:
+                // Improve this.
                 let subblock = subblock(hl, node, i as u8, j as u8);
                 let subnode = subblock.unwrap_node();
                 evolve(hl, subnode, depth - 1)
@@ -290,24 +296,31 @@ pub fn step_pow2<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lognsteps: usize) ->
 
 pub fn step<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize, nsteps: u64)
     -> RawBlock<'a> {
+    step_u(hl, node, depth, &U::from_u64(nsteps).unwrap())
+}
 
-    debug_assert!(nsteps < 1 << (depth + LG_LEAF_SIZE - 1));
+fn step_u<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize, nsteps: &U)
+    -> RawBlock<'a> {
+
+    // Make more efficient?
+    debug_assert!(*nsteps < U::one() << (depth + LG_LEAF_SIZE - 1));
 
     if depth == 0 {
         let corners = make_2x2(|y, x| node.corners()[y][x].unwrap_leaf());
-        RawBlock::Leaf(leaf_step(hl, corners, nsteps))
+        RawBlock::Leaf(leaf_step(hl, corners, nsteps.to_u64().unwrap()))
     } else {
         // Highest-order shift
         let ho_shift = depth + LG_LEAF_SIZE - 2;
         // Highest-order bit
         let ho_bit = nsteps >> ho_shift;
         // Remaining bits
-        let rem = nsteps & ((1 << ho_shift) - 1);
+        // Make more efficient?
+        let rem = nsteps & ((U::one() << ho_shift) - U::one());
 
         let intermediate = make_3x3(|y, x| {
             let pre_inter_block = subblock(hl, node, y as u8, x as u8);
             let pre_inter = pre_inter_block.unwrap_node();
-            if ho_bit == 1 {
+            if ho_bit.is_one() {
                 evolve(hl, pre_inter, depth - 1)
             } else {
                 subblock(hl, pre_inter, 1, 1)
@@ -315,7 +328,7 @@ pub fn step<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize, nsteps: u64)
         });
         hl.raw_node_block(make_2x2(|y, x| {
             let pre_res = make_2x2(|i, j| intermediate[i+y][j+x]);
-            step(hl, hl.raw_node(pre_res), depth-1, rem)
+            step_u(hl, hl.raw_node(pre_res), depth-1, &rem)
         }))
     }
 }

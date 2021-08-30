@@ -11,6 +11,7 @@
 extern crate fnv;
 #[macro_use]
 extern crate nom;
+extern crate num;
 extern crate rand;
 
 #[macro_use]
