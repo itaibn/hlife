@@ -15,9 +15,6 @@ use leaf::{
 };
 use util::{make_2x2, make_3x3};
 
-// Temp for bignum conversion
-type U = u64;
-
 /// A table containing the 2x2 center block after one generation for all
 /// possible 4x4 blocks.
 pub fn mk_small_evolve_cache() -> [u8; 1<<16] {

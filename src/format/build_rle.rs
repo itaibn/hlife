@@ -41,7 +41,7 @@ pub fn block_from_rle<'a>(hl: &Hashlife<'a>, rle: &RLE) -> Result<Block<'a>,
 
     use std::cmp::max;
 
-    let mut matrix = try!(tokens_to_matrix(&expand_rle(rle)));
+    let mut matrix = tokens_to_matrix(&expand_rle(rle))?;
     let max_row_len = matrix.iter().map(|row| row.len()).max().unwrap_or(0);
     let max_side = max(max_row_len, matrix.len());
     let res_side: usize = max(max_side, LEAF_SIZE).next_power_of_two();

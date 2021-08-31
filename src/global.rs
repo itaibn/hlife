@@ -1,5 +1,5 @@
 
-use num::{BigUint, One, FromPrimitive, ToPrimitive, Zero};
+use num::{BigUint, One, FromPrimitive, Zero};
 
 use ::{Block, Hashlife};
 use util::{log2_upper_bigu, make_2x2};
@@ -58,10 +58,6 @@ impl<'a> Pattern<'a> {
         self.dead_space += 1 << lg_size;
     }
 */
-
-    fn length(&self) -> u64 {
-        self.length_bigu().to_u64().unwrap()
-    }
 
     fn length_bigu(&self) -> BigUint {
         (BigUint::one() << self.block.lg_size()) - (&self.dead_space << 1)

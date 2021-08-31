@@ -211,7 +211,7 @@ impl<'a> Block<'a> {
             Block::Leaf(_) => Ok(LG_LEAF_SIZE),
             Block::Node(n) => {
                 let corners = n.corners();
-                let size_m1 = try!(corners[0][0].lg_size_verified());
+                let size_m1 = corners[0][0].lg_size_verified()?;
                 for &(i, j) in &[(0, 1), (1, 0), (1, 1)] {
                     if corners[i][j].lg_size_verified() != Ok(size_m1) {
                         return Err(());

@@ -9,7 +9,7 @@
     allow(needless_range_loop))]
 
 extern crate fnv;
-#[macro_use]
+//#[macro_use]
 extern crate nom;
 extern crate num;
 extern crate rand;

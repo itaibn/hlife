@@ -14,16 +14,16 @@ pub fn build_mc<'a>(hl: &Hashlife<'a>, mclines: &[MCLine]) -> Result<Block<'a>,
         let new_block = match *line {
             MCLine::Leaf(ref leaf) => build_mc_leaf(hl, leaf),
             MCLine::Node(MCNode(d, b0, b1, b2, b3)) => {
-                let elems = try!(try_make_2x2(|i, j| {
+                let elems = try_make_2x2(|i, j| {
                     let index: usize = match (i, j)
                         {(0,0) => b0, (0,1) => b1, (1,0) => b2, (1,1) => b3,
                          _ => unreachable!()};
                     if index == 0 {
                         Ok(hl.blank(d-1))
                     } else {
-                        Ok(*try!(table.get(index-1).ok_or(())))
+                        Ok(*table.get(index-1).ok_or(())?)
                     }
-                }));
+                })?;
                 hl.node_block(elems)
             }
         };

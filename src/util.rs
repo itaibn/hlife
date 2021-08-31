@@ -7,10 +7,12 @@ macro_rules! debug {
     }
 }
 
+/*
 /// Return ceiling(log_2 (n))
 pub fn log2_upper(n: u64) -> u32 {
     n.next_power_of_two().trailing_zeros()
 }
+*/
 
 /// Return ceiling(log_2 (n))
 pub fn log2_upper_bigu(n: &BigUint) -> u64 {
@@ -26,8 +28,8 @@ pub fn make_2x2<A,F>(mut func: F) -> [[A; 2]; 2]
 pub fn try_make_2x2<A,E,F>(mut func: F) -> Result<[[A; 2]; 2], E>
     where F : FnMut(usize, usize) -> Result<A,E> {
     
-    Ok([[try!(func(0, 0)), try!(func(0, 1))],
-        [try!(func(1, 0)), try!(func(1, 1))]])
+    Ok([[func(0, 0)?, func(0, 1)?],
+        [func(1, 0)?, func(1, 1)?]])
 }
 
 pub fn make_3x3<A,F>(mut func: F) -> [[A; 3]; 3]
@@ -40,5 +42,7 @@ pub fn make_3x3<A,F>(mut func: F) -> [[A; 3]; 3]
 
 #[test]
 fn test_log2_upper() {
-    assert_eq!(log2_upper(6), 3);
+    use num::FromPrimitive;
+    assert_eq!(log2_upper_bigu(&BigUint::from_u32(6).unwrap()), 3);
+    assert_eq!(log2_upper_bigu(&BigUint::from_u32(8).unwrap()), 3);
 }

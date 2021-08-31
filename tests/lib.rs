@@ -10,8 +10,8 @@ use hlife::global::Pattern;
 #[cfg(not(feature = "4x4_leaf"))]
 fn read_file(path: &str) -> io::Result<Vec<u8>> {
     let mut buf = Vec::new();
-    let mut file = try!(File::open(path));
-    try!(file.read_to_end(&mut buf));
+    let mut file = File::open(path)?;
+    file.read_to_end(&mut buf)?;
     Ok(buf)
 }
 
