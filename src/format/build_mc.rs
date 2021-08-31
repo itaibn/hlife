@@ -1,6 +1,6 @@
-use ::{Block, Hashlife};
-use leaf::LG_LEAF_SIZE;
-use util::try_make_2x2;
+use crate::{Block, Hashlife};
+use crate::leaf::LG_LEAF_SIZE;
+use crate::util::try_make_2x2;
 
 use super::build_rle::block_from_matrix;
 use super::parse::{State, MCLine, MCLeaf, MCNode};

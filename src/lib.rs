@@ -8,12 +8,6 @@
 #![cfg_attr(all(feature="clippy", not(feature="clippy_pedantic")),
     allow(needless_range_loop))]
 
-extern crate fnv;
-//#[macro_use]
-extern crate nom;
-extern crate num;
-extern crate rand;
-
 #[macro_use]
 mod util;
 
@@ -32,13 +26,13 @@ use std::fmt;
 
 use num::{BigUint, One, FromPrimitive};
 
-pub use leaf::{Leaf, LG_LEAF_SIZE, LEAF_SIZE, LEAF_MASK};
-use block::{
+pub use crate::leaf::{Leaf, LG_LEAF_SIZE, LEAF_SIZE, LEAF_MASK};
+use crate::block::{
     Block as RawBlock,
     Node as RawNode,
     CABlockCache,
 };
-use util::make_2x2;
+use crate::util::make_2x2;
 
 /// Global state for the Hashlife algorithm. For information on the lifetime
 /// parameter see `block::CABlockHash`.
@@ -362,8 +356,8 @@ impl<'a> Eq for Block<'a> {}
 #[cfg(test)]
 mod test {
     use super::Hashlife;
-    use leaf::LG_LEAF_SIZE;
-    use block::Block;
+    use crate::leaf::LG_LEAF_SIZE;
+    use crate::block::Block;
 
     #[test]
     fn test_blank0() {

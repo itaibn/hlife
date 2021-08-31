@@ -14,8 +14,8 @@ use hlife::global::Pattern;
 
 fn read_file(path: &str) -> io::Result<Vec<u8>> {
     let mut buf = Vec::new();
-    let mut file = try!(File::open(path));
-    try!(file.read_to_end(&mut buf));
+    let mut file = File::open(path)?;
+    file.read_to_end(&mut buf)?;
     Ok(buf)
 }
 

@@ -2,9 +2,9 @@
 
 use std::ops::Range;
 
-use ::{Block, Hashlife};
-use leaf::{Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
-use util::make_2x2;
+use crate::{Block, Hashlife};
+use crate::leaf::{Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
+use crate::util::make_2x2;
 use super::parse::{RLE, RLEEncode, RLEToken, State};
 
 fn expand_rle<A:Clone>(rle: &RLEEncode<A>) -> Vec<A> {

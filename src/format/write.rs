@@ -1,8 +1,8 @@
 use std::cmp;
 
-use ::Block;
-use block::Block as RawBlock;
-use leaf::{Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
+use crate::Block;
+use crate::block::Block as RawBlock;
+use crate::leaf::{Leaf, LEAF_SIZE, LEAF_Y_SHIFT, LEAF_X_SHIFT};
 use super::parse::{RLEToken, RLEBuf, State};
 
 /// Transforms a block into RLE format. Panics if the block is ill-formed.
@@ -159,7 +159,7 @@ fn rle_to_string(rle_data: RLEData) -> String {
 #[cfg(test)]
 mod test {
     use super::format_rle;
-    use ::Hashlife;
+    use crate::Hashlife;
 
     #[test]
     fn test_round_trip() {

@@ -1,8 +1,8 @@
 
 use num::{BigUint, One, FromPrimitive, Zero};
 
-use ::{Block, Hashlife};
-use util::{log2_upper_bigu, make_2x2};
+use crate::{Block, Hashlife};
+use crate::util::{log2_upper_bigu, make_2x2};
 
 /// Infinite pattern which is dead in all but a finite area.
 #[derive(Debug)]
@@ -108,7 +108,7 @@ fn encase<'a>(hl: Hashlife<'a>, b: Block<'a>) -> Block<'a> {
 #[cfg(test)]
 mod test {
     use super::Pattern;
-    use ::Hashlife;
+    use crate::Hashlife;
 
     fn parse<'a>(hl: Hashlife<'a>, bytes: &'static str) -> Pattern<'a> {
         Pattern::new(hl.rle(bytes))
@@ -121,7 +121,7 @@ mod test {
             blinker_in.step(1);
             let blinker_out = parse(hl, "$3bo$3bo$3bob!");
             if blinker_in != blinker_out {
-                use format::write::format_rle;
+                use crate::format::write::format_rle;
                 panic!("{}\n{}", format_rle(&blinker_in.block()),
                     format_rle(&blinker_out.block()));
             }

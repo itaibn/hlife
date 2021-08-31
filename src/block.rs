@@ -6,14 +6,14 @@ use std::hash::{Hash, Hasher};
 
 use fnv::FnvHasher;
 
-use cache::Cache;
+use crate::cache::Cache;
 
 #[cfg(feature = "xor_hasher")]
 use self::xor_hasher::XorHasherBuilder as HashmapState;
 #[cfg(not(feature = "xor_hasher"))]
 use std::collections::hash_map::RandomState as HashmapState;
 
-use leaf::{Leaf, LG_LEAF_SIZE};
+use crate::leaf::{Leaf, LG_LEAF_SIZE};
 
 // [Currently these notes are out of date.]
 // NOTE ON OWNERSHIP AND SAFETY:
@@ -237,7 +237,7 @@ impl<'a> Block<'a> {
 
 impl<'a> fmt::Debug for Block<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use format::write::raw_format_rle;
+        use crate::format::write::raw_format_rle;
         
         let as_string = raw_format_rle(self);
         write!(f, "{}", as_string)
@@ -283,7 +283,7 @@ mod xor_hasher {
 
 #[cfg(test)]
 mod test {
-    use leaf::LG_LEAF_SIZE;
+    use crate::leaf::LG_LEAF_SIZE;
 
     use super::{CABlockCache, Block};
 

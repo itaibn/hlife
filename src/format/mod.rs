@@ -3,8 +3,8 @@ mod build_rle;
 mod build_mc;
 pub mod write;
 
-use ::{Block, Hashlife};
-use block::Block as RawBlock;
+use crate::{Block, Hashlife};
+use crate::block::Block as RawBlock;
 
 impl<'a> Hashlife<'a> {
     pub fn block_from_bytes(&self, bytes: &[u8]) -> Result<Block<'a>, ()> {
@@ -52,8 +52,8 @@ impl<'a> Hashlife<'a> {
 // Test for parsing error found in ::evolve tests and others.
 #[test]
 fn test_block_from_bytes() {
-    use block::Block;
-    use ::Hashlife;
+    use crate::block::Block;
+    use crate::Hashlife;
 
     Hashlife::with_new(|hl| {
         assert!(hl.raw_block_from_bytes(b"bbo$boo$bbo!").is_ok());

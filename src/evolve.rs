@@ -3,9 +3,9 @@
 
 use num::{One, FromPrimitive, ToPrimitive, BigUint};
 
-use ::Hashlife;
-use block::{Block as RawBlock, Node as RawNode};
-use leaf::{
+use crate::Hashlife;
+use crate::block::{Block as RawBlock, Node as RawNode};
+use crate::leaf::{
     Leaf,
     LG_LEAF_SIZE,
     LEAF_SIZE,
@@ -13,7 +13,7 @@ use leaf::{
     LEAF_Y_SHIFT,
     LEAF_X_SHIFT,
 };
-use util::{make_2x2, make_3x3};
+use crate::util::{make_2x2, make_3x3};
 
 /// A table containing the 2x2 center block after one generation for all
 /// possible 4x4 blocks.
@@ -332,7 +332,7 @@ pub fn step_u<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize, nsteps:
 
 #[cfg(test)]
 mod test {
-    use ::Hashlife;
+    use crate::Hashlife;
 
     use super::mk_small_evolve_cache;
 
