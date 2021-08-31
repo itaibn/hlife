@@ -1,7 +1,7 @@
 // In functions below, `depth` is the depth of *output* block. depth == 0 <=>
 // block is leaf.
 
-use num::{One, FromPrimitive, ToPrimitive, BigUint as U};
+use num::{One, FromPrimitive, ToPrimitive, BigUint};
 
 use ::Hashlife;
 use block::{Block as RawBlock, Node as RawNode};
@@ -16,7 +16,7 @@ use leaf::{
 use util::{make_2x2, make_3x3};
 
 // Temp for bignum conversion
-//type U = u64;
+type U = u64;
 
 /// A table containing the 2x2 center block after one generation for all
 /// possible 4x4 blocks.
@@ -296,14 +296,14 @@ pub fn step_pow2<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, lognsteps: usize) ->
 
 pub fn step<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize, nsteps: u64)
     -> RawBlock<'a> {
-    step_u(hl, node, depth, &U::from_u64(nsteps).unwrap())
+    step_u(hl, node, depth, &BigUint::from_u64(nsteps).unwrap())
 }
 
-fn step_u<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize, nsteps: &U)
-    -> RawBlock<'a> {
+pub fn step_u<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize, nsteps:
+    &BigUint) -> RawBlock<'a> {
 
     // Make more efficient?
-    debug_assert!(*nsteps < U::one() << (depth + LG_LEAF_SIZE - 1));
+    debug_assert!(*nsteps < BigUint::one() << (depth + LG_LEAF_SIZE - 1));
 
     if depth == 0 {
         let corners = make_2x2(|y, x| node.corners()[y][x].unwrap_leaf());
@@ -315,7 +315,7 @@ fn step_u<'a>(hl: &Hashlife<'a>, node: RawNode<'a>, depth: usize, nsteps: &U)
         let ho_bit = nsteps >> ho_shift;
         // Remaining bits
         // Make more efficient?
-        let rem = nsteps & ((U::one() << ho_shift) - U::one());
+        let rem = nsteps & ((BigUint::one() << ho_shift) - BigUint::one());
 
         let intermediate = make_3x3(|y, x| {
             let pre_inter_block = subblock(hl, node, y as u8, x as u8);

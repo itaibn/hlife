@@ -1,19 +1,21 @@
 
+use num::{BigUint, One, FromPrimitive, ToPrimitive, Zero};
+
 use ::{Block, Hashlife};
-use util::{log2_upper, make_2x2};
+use util::{log2_upper_bigu, make_2x2};
 
 /// Infinite pattern which is dead in all but a finite area.
 #[derive(Debug)]
 pub struct Pattern<'a> {
     block: Block<'a>,
-    dead_space: u64,
+    dead_space: BigUint,
 }
 
 impl<'a> Pattern<'a> {
     // `block` must be a node
     pub fn new(block: Block<'a>) -> Self {
         assert!(block.destruct().is_ok(), "Pattern block must be a node");
-        Pattern {block: block, dead_space: 0}
+        Pattern {block: block, dead_space: BigUint::zero()}
     }
 
     pub fn block(&self) -> Block<'a> {
@@ -21,14 +23,18 @@ impl<'a> Pattern<'a> {
     }
 
     pub fn step(&mut self, nsteps: u64) {
-        let new_length = self.length() + 2 * nsteps;
-        let lg_size_needed = log2_upper(new_length) as usize + 1;
+        self.step_bigu(&BigUint::from_u64(nsteps).unwrap())
+    }
+
+    pub fn step_bigu(&mut self, nsteps: &BigUint) {
+        let new_length = self.length_bigu() + (nsteps << 1);
+        let lg_size_needed = log2_upper_bigu(&new_length) as usize + 1;
         let mut block = self.block;
         while block.lg_size() < lg_size_needed {
             block = encase(self.hl(), block);
         }
-        self.block = self.hl().step(block.unwrap_node(), nsteps);
-        self.dead_space = (1 << self.block.lg_size()) - new_length;
+        self.block = self.hl().step_bigu(block.unwrap_node(), nsteps);
+        self.dead_space = (BigUint::one() << self.block.lg_size()) - new_length;
     }
 
 /*
@@ -54,7 +60,11 @@ impl<'a> Pattern<'a> {
 */
 
     fn length(&self) -> u64 {
-        (1 << self.block.lg_size()) - 2 * self.dead_space
+        self.length_bigu().to_u64().unwrap()
+    }
+
+    fn length_bigu(&self) -> BigUint {
+        (BigUint::one() << self.block.lg_size()) - (&self.dead_space << 1)
     }
 
     fn hl(&self) -> Hashlife<'a> {

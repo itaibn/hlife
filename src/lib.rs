@@ -30,7 +30,7 @@ mod cache;
 use std::cell::{RefCell, RefMut};
 use std::fmt;
 
-//use rand;
+use num::{BigUint, One, FromPrimitive};
 
 pub use leaf::{Leaf, LG_LEAF_SIZE, LEAF_SIZE, LEAF_MASK};
 use block::{
@@ -239,9 +239,15 @@ impl<'a> Hashlife<'a> {
     /// Return sidelength 2^(n-1) block at the center of the node after it
     /// evolved `nstep` steps. Requires `nstep < 2**(n-2)`.
     pub fn step(&self, node: Node<'a>, nstep: u64) -> Block<'a> {
-        assert!(nstep < 1 << (node.lg_size() - 2));
+        self.step_bigu(node, &BigUint::from_u64(nstep).unwrap())
+    }
 
-        let raw = evolve::step(self, node.to_raw(), node.lg_size() -
+    /// Return sidelength 2^(n-1) block at the center of the node after it
+    /// evolved `nstep` steps. Requires `nstep < 2**(n-2)`.
+    pub fn step_bigu(&self, node: Node<'a>, nstep: &BigUint) -> Block<'a> {
+        assert!(*nstep < BigUint::one() << (node.lg_size() - 2));
+
+        let raw = evolve::step_u(self, node.to_raw(), node.lg_size() -
             LG_LEAF_SIZE - 1, nstep);
         Block {
             raw: raw,

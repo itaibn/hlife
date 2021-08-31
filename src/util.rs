@@ -1,12 +1,20 @@
 
+use num::BigUint;
+
 macro_rules! debug {
     ($($args:tt)*) => {
         if cfg!(test) {println!($($args)*);}
     }
 }
 
+/// Return ceiling(log_2 (n))
 pub fn log2_upper(n: u64) -> u32 {
     n.next_power_of_two().trailing_zeros()
+}
+
+/// Return ceiling(log_2 (n))
+pub fn log2_upper_bigu(n: &BigUint) -> u64 {
+    (n-1u32).bits()
 }
 
 pub fn make_2x2<A,F>(mut func: F) -> [[A; 2]; 2]
